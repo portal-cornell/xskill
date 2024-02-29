@@ -8,4 +8,6 @@ start_eps: 0
 end_eps: 4
 res: 384
 embodiment: 'human'
-save_dir: '${base_dev_dir}/xskill/small_datasets/kitchen_dataset/${embodiment}'
+
+store_video: True
+video_path: '${base_dev_dir}/xskill/small_datasets/kitchen/${embodiment}'
