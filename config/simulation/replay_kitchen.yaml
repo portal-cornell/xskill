@@ -1,0 +1,11 @@
+hydra:
+  output_subdir: null
+  
+base_dev_dir: '/home/portal'
+
+dataset_dir: '${base_dev_dir}/xskill/small_datasets/kitchen/kitchen_demos_multitask'
+start_eps: 0
+end_eps: 4
+res: 384
+embodiment: 'human'
+save_dir: '${base_dev_dir}/xskill/small_datasets/kitchen_dataset/${embodiment}'

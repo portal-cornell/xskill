@@ -5,28 +5,29 @@ import numpy as np
 
 base_dev_dir = "/home/portal"
 kd = KitchenMjlLowdimDataset(
-    dataset_dir=f"{base_dev_dir}/xskill/datasets/kitchen/kitchen_demos_multitask"
+    dataset_dir=f"{base_dev_dir}/xskill/small_datasets/kitchen/kitchen_demos_multitask"
 )
 task_completions = []
-env = KitchenAllV0(use_abs_action=True)
+env = KitchenAllV0(use_abs_action=True, use_sphere_agent=True)
 for i in range(kd.replay_buffer.n_episodes):
     obs = env.reset()
     eps_data = kd.replay_buffer.get_episode(i)
     reset_pos = np.concatenate([eps_data["obs"][0, :9], eps_data["obs"][0, 9:30]])
     env.robot.reset(env, reset_pos, env.init_qvel[:].copy())
     for j in range(len(eps_data["action"])):
+        env.render(mode='human', custom=False)
         _, _, _, info = env.step(eps_data["action"][j])
     task_completions.append(info["completed_tasks"])
 
 task_completions_list = [list(arr) for arr in task_completions]
 
-write_json(
-    f"{base_dev_dir}/xskill/datasets/kitchen_dataset/task_completions.json",
-    task_completions_list,
-)
+# write_json(
+#     f"{base_dev_dir}/xskill/datasets/kitchen_dataset/task_completions.json",
+#     task_completions_list,
+# )
 
 # test read
-read_json(f"{base_dev_dir}/xskill/datasets/kitchen_dataset/task_completions.json")
+# read_json(f"{base_dev_dir}/xskill/datasets/kitchen_dataset/task_completions.json")
 
 eval_mask = np.zeros(len(task_completions_list), dtype=bool)
 for i, d in enumerate(task_completions_list):
@@ -38,13 +39,13 @@ for i, d in enumerate(task_completions_list):
     ):
         eval_mask[i] = True
 
-write_json(
-    f"{base_dev_dir}/xskill/datasets/kitchen_dataset/eval_mask.json",
-    eval_mask.tolist(),
-)
+# write_json(
+#     f"{base_dev_dir}/xskill/datasets/kitchen_dataset/eval_mask.json",
+#     eval_mask.tolist(),
+# )
 
 train_mask = ~eval_mask
-write_json(
-    f"{base_dev_dir}/xskill/datasets/kitchen_dataset/train_mask.json",
-    train_mask.tolist(),
-)
+# write_json(
+#     f"{base_dev_dir}/xskill/datasets/kitchen_dataset/train_mask.json",
+#     train_mask.tolist(),
+# )

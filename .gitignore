@@ -153,6 +153,7 @@ cython_debug/
 
 
 datasets/
+small_datasets/
 experiment/
 *.json
 outputs/
