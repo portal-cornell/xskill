@@ -39,7 +39,8 @@ def train_diffusion_bc(cfg: DictConfig):
     # parameters
     pred_horizon = cfg.pred_horizon
     obs_horizon = cfg.obs_horizon
-    proto_horizon = cfg.proto_horizon
+    # proto_horizon = cfg.proto_horizon
+    final_im_horizon = obs_horizon
 
     dataset = hydra.utils.instantiate(cfg.dataset)
     # save training data statistics (min, max) for each dim
@@ -65,8 +66,8 @@ def train_diffusion_bc(cfg: DictConfig):
     batch = next(iter(dataloader))
     print("batch['obs'].shape:", batch["obs"].shape)
     print("batch['actions'].shape", batch["actions"].shape)
-    print("batch['protos'].shape", batch["protos"].shape)
-    print("batch['proto_snap'].shape", batch["proto_snap"].shape)
+    # print("batch['protos'].shape", batch["protos"].shape)
+    # print("batch['proto_snap'].shape", batch["proto_snap"].shape)
     print("batch['images'].shape", batch["images"].shape)
 
     if cfg.vision_feature_dim == 512:
@@ -81,37 +82,38 @@ def train_diffusion_bc(cfg: DictConfig):
     # the output of PushTEnv
     obs_dim = cfg.obs_dim
     action_dim = cfg.action_dim
-    proto_dim = cfg.proto_dim
+    # proto_dim = cfg.proto_dim
+    # image_dim = cfg.obs_dim
 
     # create network object
-    if cfg.upsample_proto:
-        noise_pred_net = hydra.utils.instantiate(
-            cfg.noise_pred_net,
-            global_cond_dim=vision_feature_dim * obs_horizon +
-            obs_dim * obs_horizon +
-            proto_horizon * cfg.upsample_proto_net.out_size,
-        )
-    else:
-        noise_pred_net = hydra.utils.instantiate(
-            cfg.noise_pred_net,
-            global_cond_dim=vision_feature_dim * obs_horizon +
-            obs_dim * obs_horizon + proto_horizon * proto_dim,
-        )
-    proto_pred_net = hydra.utils.instantiate(
-        cfg.proto_pred_net,
-        input_dim=vision_feature_dim * obs_horizon + obs_dim * obs_horizon,
+    # if cfg.upsample_proto:
+    #     noise_pred_net = hydra.utils.instantiate(
+    #         cfg.noise_pred_net,
+    #         global_cond_dim=vision_feature_dim * obs_horizon +
+    #         obs_dim * obs_horizon +
+    #         obs_dim * obs_horizon,
+    #     )
+    # else:
+    noise_pred_net = hydra.utils.instantiate(
+        cfg.noise_pred_net,
+        global_cond_dim=vision_feature_dim * obs_horizon +
+        obs_dim * obs_horizon + obs_dim * obs_horizon,
     )
+    # proto_pred_net = hydra.utils.instantiate(
+    #     cfg.proto_pred_net,
+    #     input_dim=vision_feature_dim * obs_horizon + obs_dim * obs_horizon,
+    # )
 
     # the final arch has 3 parts
     nets = nn.ModuleDict({
         "vision_encoder": vision_encoder,
-        "proto_pred_net": proto_pred_net,
+        # "proto_pred_net": proto_pred_net,
         "noise_pred_net": noise_pred_net,
     })
 
-    if cfg.upsample_proto:
-        upsample_proto_net = hydra.utils.instantiate(cfg.upsample_proto_net)
-        nets["upsample_proto_net"] = upsample_proto_net
+    # if cfg.upsample_proto:
+    #     upsample_proto_net = hydra.utils.instantiate(cfg.upsample_proto_net)
+    #     nets["upsample_proto_net"] = upsample_proto_net
 
     noise_scheduler = hydra.utils.instantiate(cfg.noise_scheduler)
     # device transfer
@@ -143,7 +145,7 @@ def train_diffusion_bc(cfg: DictConfig):
     for epoch_idx in range(cfg.num_epochs):
         epoch_loss = list()
         epoch_action_loss = list()
-        epoch_proto_prediction_loss = list()
+        # epoch_proto_prediction_loss = list()
 
         # batch loop
         for nbatch in dataloader:
@@ -156,9 +158,9 @@ def train_diffusion_bc(cfg: DictConfig):
             # (B, obs_horizon, 3,112,112)
             nimage = nbatch["images"].to(device)
             # (B, 1, model_dim)
-            nproto = nbatch["protos"].to(device)
-            proto_snap = nbatch["proto_snap"].to(device)
-            proto_snap = proto_snap.reshape(B, dataset.snap_frames, -1)
+            # nproto = nbatch["protos"].to(device)
+            # proto_snap = nbatch["proto_snap"].to(device)
+            # proto_snap = proto_snap.reshape(B, dataset.snap_frames, -1)
             naction = nbatch["actions"].to(device)
 
             # encoder vision features
@@ -170,33 +172,34 @@ def train_diffusion_bc(cfg: DictConfig):
                 [image_features, nobs],
                 dim=-1)  # (B,obs_horizon,low_dim_feature+visual_feature)
             # predict the proto: (B,obs_horizon*(low_dim_feature+visual_feature))),(B,snap_frames,D)
-            predict_proto = proto_pred_net(obs_feature.flatten(start_dim=1),
-                                           proto_snap)
+            # predict_proto = proto_pred_net(obs_feature.flatten(start_dim=1),
+            #                                proto_snap)
 
             # (B, proto_horizon, obs_dim)
             nobs = nobs[:, :obs_horizon, :]
 
-            if cfg.upsample_proto:
-                upsample_proto = upsample_proto_net(
-                    nproto.flatten(start_dim=1))
-                upsample_proto = upsample_proto.reshape(
-                    B, cfg.proto_horizon, -1)  # (B,proto_horizon,upsample_dim)
-                obs_cond = torch.cat(
-                    [
-                        obs_feature.flatten(start_dim=1),
-                        upsample_proto.flatten(start_dim=1),
-                    ],
-                    dim=1,
-                )
-            else:
-                # feed in: (B,obs_feature*obs_horizon),(B,snap_frame,D)
-                obs_cond = torch.cat(
-                    [
-                        obs_feature.flatten(start_dim=1),
-                        nproto.flatten(start_dim=1)
-                    ],
-                    dim=1,
-                )
+            # if cfg.upsample_proto:
+            #     upsample_proto = upsample_proto_net(
+            #         nproto.flatten(start_dim=1))
+            #     upsample_proto = upsample_proto.reshape(
+            #         B, cfg.proto_horizon, -1)  # (B,proto_horizon,upsample_dim)
+            #     obs_cond = torch.cat(
+            #         [
+            #             obs_feature.flatten(start_dim=1),
+            #             upsample_proto.flatten(start_dim=1),
+            #         ],
+            #         dim=1,
+            #     )
+            # else:
+            # feed in: (B,obs_feature*obs_horizon),(B,snap_frame,D)
+            obs_cond = torch.cat(
+                [
+                    obs_feature.flatten(start_dim=1),
+                    obs_feature.flatten(start_dim=1),
+                    # nproto.flatten(start_dim=1)
+                ],
+                dim=1,
+            )
 
             # sample noise to add to actions
             noise = torch.randn(naction.shape, device=device)
@@ -219,9 +222,10 @@ def train_diffusion_bc(cfg: DictConfig):
 
             # L2 loss
             action_loss = nn.functional.mse_loss(noise_pred, noise)
-            proto_prediction_loss = nn.functional.mse_loss(
-                predict_proto, nproto.squeeze(1))
-            loss = action_loss + proto_prediction_loss
+            # proto_prediction_loss = nn.functional.mse_loss(
+            #     predict_proto, nproto.squeeze(1))
+            loss = action_loss
+                # + proto_prediction_loss
 
             # optimize
             loss.backward()
@@ -238,15 +242,15 @@ def train_diffusion_bc(cfg: DictConfig):
             loss_cpu = loss.item()
             epoch_loss.append(loss_cpu)
             epoch_action_loss.append(action_loss.item())
-            epoch_proto_prediction_loss.append(proto_prediction_loss.item())
+            # epoch_proto_prediction_loss.append(proto_prediction_loss.item())
 
         wandb.log({
             "epoch loss":
             np.mean(epoch_loss),
             "epoch action loss":
             np.mean(epoch_action_loss),
-            "epoch proto prediction loss":
-            np.mean(epoch_proto_prediction_loss),
+            # "epoch proto prediction loss":
+            # np.mean(epoch_proto_prediction_loss),
         })
 
         if epoch_idx % cfg.ckpt_frequency == 0:
