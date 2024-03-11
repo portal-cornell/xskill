@@ -44,9 +44,9 @@ def create_dataset(cfg: DictConfig):
             image_observations = env.render(width=cfg.res, height=cfg.res)
             image_observations = Image.fromarray(image_observations)
             frames.append(image_observations)
-            env.render(custom=False)
-    
+                
         if store_video:
+            print("rendered")
             video_filename = f"rollout_{eps_idx}.mp4"
             video_filepath = os.path.join(video_path, video_filename)
             # Save the frames as a video using imageio
