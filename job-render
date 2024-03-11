@@ -1,0 +1,11 @@
+#!/bin/bash
+#SBATCH -J xskill-render
+#SBATCH --partition=portal-interactive
+#SBATCH -N 1    
+#SBATCH --gres=gpu:1
+#SBATCH -t 00:30:00
+#SBATCH -o res.out-%j
+source /home/hcn9/.bashrc
+source activate xskill
+python /share/portal/hcn9/xskill/scripts/replay_episodes.py
+conda deactivate
