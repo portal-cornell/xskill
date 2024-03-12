@@ -129,7 +129,7 @@ def convert_images_to_tensors(images_arr, pipeline):
     config_name="label_sim_kitchen_dataset",
 )
 def label_dataset(cfg: DictConfig):
-    model = load_model(cfg)
+    # model = load_model(cfg)
 
     normalize = transforms.Normalize(
         mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
@@ -170,22 +170,24 @@ def label_dataset(cfg: DictConfig):
             # bbox_tensor = bbox_tensor.unsqueeze(0).cuda()
 
             eps_len = images_tensor.shape[0]
-            im_q = torch.stack(
-                [
-                    images_tensor[j : j + model.slide + 1]
-                    for j in range(eps_len - model.slide)
-                ]
-            )  # (b,slide+1,c,h,w)
+            # im_q = torch.stack(
+            #     [
+            #         images_tensor[j : j + model.slide + 1]
+            #         for j in range(eps_len - model.slide)
+            #     ]
+            # )  
+            # (b,slide+1,c,h,w)
             # bbox_q = torch.stack([
             #     bbox_tensor[j:j + model.slide + 1]
             #     for j in range(eps_len - model.slide)
             # ])  #(b,slide,n,4)
 
-            z = model.encoder_q(im_q, None)
-            softmax_z = torch.softmax(z / model.T, dim=1)
-            affordance_emb = model.skill_prior(im_q[:, : model.stack_frames], None)
+            # z = model.encoder_q(im_q, None)
+            # softmax_z = torch.softmax(z / model.T, dim=1)
+            # affordance_emb = model.skill_prior(im_q[:, : model.stack_frames], None)
 
-            state_representation = model.encoder_q.get_state_representation(im_q, None)
+            # state_representation = model.encoder_q.get_state_representation(im_q, None)
+            
             # traj_representation = model.encoder_q.get_traj_representation(
             #     state_representation
             # )
