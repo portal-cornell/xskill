@@ -5,9 +5,11 @@ import numpy as np
 
 
 def main():
-    num_process = 10
-    interval = int(610 / num_process)
-    index = np.arange(0, 610, interval)
+    num_process = 2
+    # interval = int(610 / num_process)
+    # index = np.arange(0, 610, interval)
+    interval = int(26 / num_process)
+    index = np.arange(0, 26, interval)
     for embodiment in ['robot', 'human']:
         # Execute each process in parallel.
         procs = []

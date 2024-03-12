@@ -60,6 +60,11 @@ def detect_moving_objects_array(arr, obs_indices, threshold=0.005):
     return moving_objects_array
 
 
+def repeat_last_proto(encode_protos, eps_len):
+    rep_proto = encode_protos[-1].unsqueeze(0).repeat(eps_len - len(encode_protos), 1)
+    return torch.cat([encode_protos, rep_proto])
+
+
 def load_state_and_to_tensor(vid):
     state_path = os.path.join(vid, "states.json")
     with open(state_path, "r") as f:
@@ -102,6 +107,7 @@ def load_images(folder_path, resize_shape=None):
 
 
 def load_model(cfg):
+    breakpoint()
     exp_cfg = omegaconf.OmegaConf.load(os.path.join(cfg.exp_path, ".hydra/config.yaml"))
     model = hydra.utils.instantiate(exp_cfg.Model).to(cfg.device)
 
@@ -186,44 +192,96 @@ def label_dataset(cfg: DictConfig):
             affordance_emb = model.skill_prior(im_q[:, : model.stack_frames], None)
 
             state_representation = model.encoder_q.get_state_representation(im_q, None)
-            # traj_representation = model.encoder_q.get_traj_representation(
-            #     state_representation
-            # )
-            # traj_representation = repeat_last_proto(traj_representation, eps_len)
-            # traj_representation = traj_representation.detach().cpu().numpy()
-            # traj_representation = np.array(traj_representation).tolist()
+            traj_representation = model.encoder_q.get_traj_representation(
+                state_representation
+            )
+            traj_representation = repeat_last_proto(traj_representation, eps_len)
+            traj_representation = traj_representation.detach().cpu().numpy()
+            traj_representation = np.array(traj_representation).tolist()
 
-            # encode_protos = repeat_last_proto(z, eps_len)
-            # encode_protos = encode_protos.detach().cpu().numpy()
-            # encode_protos = np.array(encode_protos).tolist()
+            encode_protos = repeat_last_proto(z, eps_len)
+            encode_protos = encode_protos.detach().cpu().numpy()
+            encode_protos = np.array(encode_protos).tolist()
 
-            # softmax_encode_protos = repeat_last_proto(softmax_z, eps_len)
-            # softmax_encode_protos = softmax_encode_protos.detach().cpu().numpy()
-            # softmax_encode_protos = np.array(softmax_encode_protos).tolist()
+            softmax_encode_protos = repeat_last_proto(softmax_z, eps_len)
+            softmax_encode_protos = softmax_encode_protos.detach().cpu().numpy()
+            softmax_encode_protos = np.array(softmax_encode_protos).tolist()
 
             affordance_state_embs = affordance_emb.detach().cpu().numpy()
             affordance_state_embs = np.array(affordance_state_embs).tolist()
 
-            # with open(os.path.join(save_folder, "encode_protos.json"), "w") as f:
-            #     json.dump(encode_protos, f)
+            with open(os.path.join(save_folder, "encode_protos.json"), "w") as f:
+                json.dump(encode_protos, f)
 
-            # with open(
-            #     os.path.join(save_folder, "softmax_encode_protos.json"), "w"
-            # ) as f:
-            #     json.dump(softmax_encode_protos, f)
+            with open(
+                os.path.join(save_folder, "softmax_encode_protos.json"), "w"
+            ) as f:
+                json.dump(softmax_encode_protos, f)
 
             with open(
                 os.path.join(save_folder, "affordance_state_embs.json"), "w"
             ) as f:
                 json.dump(affordance_state_embs, f)
 
-            # with open(os.path.join(save_folder, "traj_representation.json"), "w") as f:
-            #     json.dump(traj_representation, f)
+            with open(os.path.join(save_folder, "traj_representation.json"), "w") as f:
+                json.dump(traj_representation, f)
 
             with open(os.path.join(save_folder, "moved_obj.json"), "w") as f:
                 json.dump(moved_obj, f)
 
         # plot_proto_task_relation(demo_type=demo_type, cfg=cfg)
+
+
+def plot_proto_task_relation(demo_type="human", cfg=None):
+    if demo_type == "human":
+        encode_path = os.path.join(
+            cfg.exp_path, "human_encode_protos", f"ckpt_{cfg.ckpt}"
+        )
+    else:
+        encode_path = os.path.join(cfg.exp_path, "encode_protos", f"ckpt_{cfg.ckpt}")
+
+    all_folders = os.listdir(encode_path)
+    all_folders = sorted(all_folders, key=lambda x: int(x))
+    if cfg.plot_top_k is not None:
+        all_folders = all_folders[: cfg.plot_top_k]
+    softmax_protos = []
+    labels = []
+    for f in all_folders:
+        with open(
+            os.path.join(encode_path, f, "softmax_encode_protos.json"), "r"
+        ) as file:
+            softmax_protos.append(np.array(json.load(file)))
+        with open(os.path.join(encode_path, f, "moved_obj.json"), "r") as file:
+            labels.append(np.array(json.load(file)))
+
+        # with open(os.path.join(encode_path, f, 'traj_representation.json'), 'r') as file:
+        #     raw_skill_representations.append(np.array(json.load(file)))
+
+    softmax_protos = np.concatenate(softmax_protos)
+    labels = np.concatenate(labels)
+    # raw_skill_representations = np.concatenate(raw_skill_representations)
+
+    max_proto = np.argmax(softmax_protos, axis=1)
+    viz_pd = pd.DataFrame()
+    viz_pd["max_proto"] = max_proto
+    # viz_pd['raw_skill_representations'] = raw_skill_representations
+    viz_pd["task"] = [
+        list(OBS_ELEMENT_INDICES.keys())[np.argmax(labels[i])]
+        for i in range(len(labels))
+    ]
+    non_zero_index = (labels != 0).any(axis=1)
+    viz_pd = viz_pd[non_zero_index]
+    sns.histplot(viz_pd, x="max_proto", y="task", bins=100)
+
+    import matplotlib.pyplot as plt
+
+    plt.savefig(
+        os.path.join(cfg.exp_path, f"{demo_type}_proto_task_relation_{cfg.ckpt}.png")
+    )
+    viz_pd.to_csv(
+        os.path.join(cfg.exp_path, f"{demo_type}_proto_task_relation_{cfg.ckpt}.csv"),
+        index=False,
+    )
 
 
 if __name__ == "__main__":
