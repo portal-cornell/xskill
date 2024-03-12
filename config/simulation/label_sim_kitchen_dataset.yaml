@@ -5,8 +5,8 @@ hydra:
     dir: '${base_dev_dir}/xskill/experiment/label_sim_kitchen/${now:%Y-%m-%d_%H-%M-%S}'
 
 resize_shape: [124,124]
-data_path: '${base_dev_dir}/xskill/small_datasets/kitchen_dataset'
-exp_path: '${base_dev_dir}/xskill/experiment/pretrain/2024-03-01_15-05-45/'
+data_path: '${base_dev_dir}/xskill/datasets/kitchen_dataset'
+exp_path: '${base_dev_dir}/xskill/experiment/pretrain/has_79_epochs'
 ckpt: 79
 device: 'cuda:0'
 plot_top_k: null

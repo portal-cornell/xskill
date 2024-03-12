@@ -1,4 +1,4 @@
-base_dev_dir: null
+base_dev_dir: '/home/portal'
 hydra.job.config.save_dir: null
 save_dir: '${base_dev_dir}/xskill/experiment/diffusion_bc/kitchen/'
 
@@ -31,7 +31,7 @@ bc_resize: [112,112]
 pretrain_resize: [124,124]
 pretrain_pipeline: ["center_crop_112_112","normalize"]
 
-pretrain_path: null
+pretrain_path: '${base_dev_dir}/xskill/experiment/pretrain/has_79_epochs'
 pretrain_ckpt: 79
 # dataset
 raw_representation: True
@@ -58,6 +58,7 @@ dataset:
   obs_image_based: True
   unnormal_list: ['proto_snap','protos']
   seed: ${seed}
+  verbose: True
 
 upsample_proto_net:
   _target_: xskill.model.network.Mlp

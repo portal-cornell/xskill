@@ -28,8 +28,8 @@ def train_diffusion_bc(cfg: DictConfig):
     OmegaConf.save(cfg, os.path.join(save_dir, "hydra_config.yaml"))
     print(f"output_dir: {save_dir}")
     # Set up logger
-    wandb.init(project=cfg.project_name)
-    wandb.config.update(OmegaConf.to_container(cfg))
+    # wandb.init(project=cfg.project_name)
+    # wandb.config.update(OmegaConf.to_container(cfg))
 
     #set seed
     torch.manual_seed(cfg.seed)

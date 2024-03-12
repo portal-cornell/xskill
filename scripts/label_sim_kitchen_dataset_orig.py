@@ -107,7 +107,6 @@ def load_images(folder_path, resize_shape=None):
 
 
 def load_model(cfg):
-    breakpoint()
     exp_cfg = omegaconf.OmegaConf.load(os.path.join(cfg.exp_path, ".hydra/config.yaml"))
     model = hydra.utils.instantiate(exp_cfg.Model).to(cfg.device)
 
