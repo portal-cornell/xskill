@@ -3,10 +3,10 @@ hydra.job.config.save_dir: null
 save_dir: '${base_dev_dir}/xskill/experiment/diffusion_bc/kitchen/'
 
 project_name: 'kitchen_prototype_diffusion_bc'
-num_epochs: 200
+num_epochs: 50
 lr: 1e-4
 weight_decay: 1e-6
-ckpt_frequency: 500
+ckpt_frequency: 5
 
 seed: 43
 
@@ -112,8 +112,8 @@ eval_callback:
 
 
 eval_cfg:
-  n_evaluations: 50
-  eval_frequency: 25
+  n_evaluations: 1
+  eval_frequency: 5
   pretrain_path: ${pretrain_path}
   pretrain_ckpt: ${pretrain_ckpt}
   bc_resize: ${bc_resize}

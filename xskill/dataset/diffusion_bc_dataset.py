@@ -153,7 +153,6 @@ class KitchenBCDataset(torch.utils.data.Dataset):
         self.data_dirs = data_dirs
         self.proto_dirs = proto_dirs
         self._build_dir_tree()
-        breakpoint()
         train_data = defaultdict(list)
         self.load_data(train_data)
 

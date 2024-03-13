@@ -277,7 +277,7 @@ class visual_diffusion_bc_prediction_callback:
         env = KitchenAllV0(use_abs_action=True)
         return env
 
-    def eval(self, nets, noise_scheduler, stats, eval_cfg, save_path, seed):
+    def eval(self, nets, noise_scheduler, stats, eval_cfg, save_path, seed, epoch_num=None):
         """
         pretrain resize doesn't matter here.
         use bc_resize to resize the env input to desired size
@@ -433,9 +433,11 @@ class visual_diffusion_bc_prediction_callback:
                     step_idx += 1
                     if step_idx > max_steps:
                         done = True
-
+        
         predict_protos = np.array(predict_protos)
         eval_save_path = os.path.join(save_path, "evaluation")
+        if epoch_num is not None:
+            eval_save_path = os.path.join(eval_save_path, f'ckpt_{epoch_num}')
         os.makedirs(eval_save_path, exist_ok=True)
         # save eval gif
         video_save_path = osp.join(eval_save_path, f"eval_{seed}.gif")
