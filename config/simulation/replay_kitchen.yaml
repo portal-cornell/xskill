@@ -7,7 +7,7 @@ dataset_dir: '${base_dev_dir}/xskill/datasets/kitchen/small_kitchen'
 start_eps: 0
 end_eps: 4
 res: 384
-embodiment: 'human'
+embodiment: 'none'
 
 store_video: True
-video_path: '${base_dev_dir}/xskill/datasets/kitchen/${embodiment}'
+video_path: '${base_dev_dir}/xskill/renders/${embodiment}'

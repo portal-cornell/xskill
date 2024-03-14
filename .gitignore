@@ -167,3 +167,4 @@ wandb/
 #.idea/
 
 res.*
+renders/
