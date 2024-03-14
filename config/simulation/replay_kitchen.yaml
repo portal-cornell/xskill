@@ -1,13 +1,13 @@
 hydra:
   output_subdir: null
   
-base_dev_dir: '/home/portal'
+base_dev_dir: '/share/portal/pd337'
 
-dataset_dir: '${base_dev_dir}/xskill/small_datasets/kitchen/kitchen_demos_multitask'
-start_eps: 0
-end_eps: 4
+dataset_dir: '${base_dev_dir}/xskill/datasets/kitchen/kitchen_demos_multitask'
+start_eps: 247
+end_eps: 248
 res: 384
 embodiment: 'human'
 
 store_video: True
-video_path: '${base_dev_dir}/xskill/small_datasets/kitchen/${embodiment}'
+video_path: '${base_dev_dir}/xskill/datasets/kitchen/${embodiment}'

@@ -44,7 +44,7 @@ def create_dataset(cfg: DictConfig):
             image_observations = env.render(width=cfg.res, height=cfg.res)
             image_observations = Image.fromarray(image_observations)
             frames.append(image_observations)
-            env.render(custom=False)
+            # env.render(custom=False)
     
         if store_video:
             video_filename = f"rollout_{eps_idx}.mp4"

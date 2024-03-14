@@ -279,7 +279,7 @@ def train_diffusion_bc(cfg: DictConfig):
                             stats,
                             cfg.eval_cfg,
                             save_dir,
-                            cfg.seed,
+                            seed,
                             epoch_num=epoch_idx
                         )
                         total_rewards.append(total_r)

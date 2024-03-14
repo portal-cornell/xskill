@@ -440,7 +440,7 @@ class visual_diffusion_bc_prediction_callback:
             eval_save_path = os.path.join(eval_save_path, f'ckpt_{epoch_num}')
         os.makedirs(eval_save_path, exist_ok=True)
         # save eval gif
-        video_save_path = osp.join(eval_save_path, f"eval_{seed}.gif")
+        video_save_path = osp.join(eval_save_path, f"{eval_cfg.demo_type}_eval_{seed}.gif")
         imageio.mimsave(video_save_path, imgs)
         #
         fig = go.Figure()
