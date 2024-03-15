@@ -1,4 +1,4 @@
-base_dev_dir: /share/portal/hcn9
+base_dev_dir: '/home/portal'
 
 hydra:
   run:

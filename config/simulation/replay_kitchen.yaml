@@ -1,7 +1,7 @@
 hydra:
   output_subdir: null
   
-base_dev_dir: '/share/portal/hcn9'
+base_dev_dir: '/home/portal'
 
 dataset_dir: '${base_dev_dir}/xskill/datasets/kitchen/small_kitchen'
 start_eps: 0
