@@ -186,7 +186,6 @@ class VisualMotionEncoder(nn.Module):
         return traj_representation
 
     def get_traj_representation(self, state_representation):
-
         traj_representation = self.temporal_transformer_encoder(
             state_representation)  #(b,t,f)
 
