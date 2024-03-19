@@ -1,4 +1,4 @@
-base_dev_dir: '/home/portal'
+base_dev_dir: '/share/portal'
 
 hydra:
   run:

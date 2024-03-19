@@ -140,7 +140,6 @@ class Model(pl.LightningModule):
             (self.trainer.max_epochs / 2) * self.trainer.current_epoch)
 
     def training_step(self, batch, batch_idx):
-        print('training')
         robot_batch, human_batch = batch
         self.training_step_helper(robot_batch, batch_idx)
         self.training_step_helper(human_batch, batch_idx)

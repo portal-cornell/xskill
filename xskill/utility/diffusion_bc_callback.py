@@ -461,6 +461,7 @@ class visual_diffusion_bc_prediction_callback:
 
         total_task_completed = set(info["completed_tasks"]).intersection(
             set(["kettle", "light switch", "microwave", "slide cabinet"]))
+        print(f'Total Tasks Completed: {total_task_completed}')
         order_task_completed_reward = 0
         while not complete_queue.empty() and task_stack:
             task = complete_queue.get()
