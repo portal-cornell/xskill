@@ -17,6 +17,7 @@ import pandas as pd
 import seaborn as sns
 import cv2
 from PIL import Image
+import json
 
 
 def repeat_last_proto(encode_protos, eps_len):
@@ -133,19 +134,30 @@ def label_dataset(cfg: DictConfig):
 
     clip_list = [20, 150, 247]
     frame_nums = [0, 40, 180]
-    
+
+    tasks_list = json.load(open(f'{cfg.data_path}/task_completions.json'))
+    clip_diff = 0
     for clip_num in clip_list:
         for frame_num in frame_nums:
-            output_dir = f'gif_outputs/{clip_num}_{frame_num}'
+            output_dir = f'gif_outputs{"_diff" if clip_diff != 0 else ""}/{clip_num}_{frame_num}'
             os.makedirs(output_dir, exist_ok=True)
+            human_clip_num = clip_num - clip_diff
             robot_clip_traj, robot_z = traj_representations(cfg, model, pipeline, 'robot', clip_num, frame_list=[frame_num])
             robot_gif = gif_of_clip(cfg, 'robot', clip_num, frame_num, 8, output_dir)
             
-            human_clip_traj, human_z = traj_representations(cfg, model, pipeline, 'human', clip_num)
+            human_clip_traj, human_z = traj_representations(cfg, model, pipeline, 'human', human_clip_num)
             dists = torch.norm(human_clip_traj - robot_clip_traj, dim=1)
-            closest_clip = torch.argmin(dists)
 
-            human_gif = gif_of_clip(cfg, 'human', clip_num, closest_clip.item(), 8, output_dir)
+            closest_clip = torch.argmin(dists)
+            human_gif = gif_of_clip(cfg, 'human', human_clip_num, closest_clip.item(), 8, output_dir)
+            dictionary = {
+                'robot_clip_num': clip_num,
+                'human_clip_num': human_clip_num,
+                'robot_clip_tasks': tasks_list[clip_num],
+                'human_clip_tasks': tasks_list[human_clip_num]
+            }
+            with open(os.path.join(output_dir, "output.json"), "w") as outfile:
+                json.dump(dictionary, outfile)
 
 
 

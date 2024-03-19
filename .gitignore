@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 
 gif_outputs
+gif_outputs_diff
 
 # C extensions
 *.so
