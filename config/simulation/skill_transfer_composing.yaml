@@ -1,4 +1,4 @@
-base_dev_dir: null
+base_dev_dir: '/share/portal/sak299'
 hydra.job.config.save_dir: null
 save_dir: '${base_dev_dir}/xskill/experiment/diffusion_bc/kitchen/'
 
@@ -42,7 +42,7 @@ upsample_proto: False
 dataset:
   _target_: xskill.dataset.diffusion_bc_dataset.KitchenBCDataset
   resize_shape: ${bc_resize}
-  data_dirs: ['${base_dev_dir}/xskill/datasets/kitchen_dataset/robot']
+  data_dirs: ['${base_dev_dir}/xskill/datasets/small_kitchen_dataset/robot']
   proto_dirs: ${pretrain_path}/encode_protos/ckpt_${pretrain_ckpt}
   pred_horizon: ${pred_horizon}
   obs_horizon: ${obs_horizon}

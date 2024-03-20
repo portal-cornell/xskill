@@ -17,7 +17,6 @@ from xskill.env.kitchen.v0 import KitchenAllV0
             config_path="../config/simulation",
             config_name="create_kitchen_dataset")
 def create_dataset(cfg: DictConfig):
-
     kitchen_dataset = KitchenMjlLowdimDataset(dataset_dir=cfg.dataset_dir)
     if cfg.embodiment == 'robot':
         env = KitchenAllV0(use_abs_action=True, use_sphere_agent=False)
