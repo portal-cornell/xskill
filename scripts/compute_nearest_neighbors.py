@@ -181,7 +181,7 @@ def label_dataset(cfg: DictConfig):
 
     plt.figure(figsize=(8, 6))
     plt.plot(correct_thresholds, res)
-    plt.title('Cycle Back Accuracy (Different Clips)')
+    plt.title('Cycle Back Accuracy')
     plt.xlabel('Frame Threshold')
     plt.ylabel('Accuracy')
     plt.grid(True)
