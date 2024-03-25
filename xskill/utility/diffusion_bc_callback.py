@@ -277,7 +277,7 @@ class visual_diffusion_bc_prediction_callback:
         env = KitchenAllV0(use_abs_action=True)
         return env
 
-    def eval(self, nets, noise_scheduler, stats, eval_cfg, save_path, seed):
+    def eval(self, nets, noise_scheduler, stats, eval_cfg, save_path, seed, epoch_num=None):
         """
         pretrain resize doesn't matter here.
         use bc_resize to resize the env input to desired size
@@ -433,12 +433,14 @@ class visual_diffusion_bc_prediction_callback:
                     step_idx += 1
                     if step_idx > max_steps:
                         done = True
-
+        
         predict_protos = np.array(predict_protos)
         eval_save_path = os.path.join(save_path, "evaluation")
+        if epoch_num is not None:
+            eval_save_path = os.path.join(eval_save_path, f'ckpt_{epoch_num}')
         os.makedirs(eval_save_path, exist_ok=True)
         # save eval gif
-        video_save_path = osp.join(eval_save_path, f"eval_{seed}.gif")
+        video_save_path = osp.join(eval_save_path, f"{eval_cfg.demo_type}_eval_{seed}.gif")
         imageio.mimsave(video_save_path, imgs)
         #
         fig = go.Figure()
@@ -459,6 +461,7 @@ class visual_diffusion_bc_prediction_callback:
 
         total_task_completed = set(info["completed_tasks"]).intersection(
             set(["kettle", "light switch", "microwave", "slide cabinet"]))
+        print(f'Total Tasks Completed: {total_task_completed}')
         order_task_completed_reward = 0
         while not complete_queue.empty() and task_stack:
             task = complete_queue.get()

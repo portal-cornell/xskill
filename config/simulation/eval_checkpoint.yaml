@@ -1,12 +1,15 @@
 base_dev_dir: '/share/portal/pd337'
 hydra.job.config.save_dir: null
-save_dir: '${base_dev_dir}/xskill/experiment/diffusion_bc/kitchen/'
+save_dir: '${base_dev_dir}/xskill/experiment/diffusion_bc/kitchen'
+
+trained_model_path: '${base_dev_dir}/xskill/experiment/diffusion_bc/kitchen/original_training'
+model_path: '${trained_model_path}/ckpt_150.pt'
 
 project_name: 'kitchen_prototype_diffusion_bc'
 num_epochs: 200
 lr: 1e-4
 weight_decay: 1e-6
-ckpt_frequency: 5
+ckpt_frequency: 10
 
 seed: 43
 
@@ -58,6 +61,7 @@ dataset:
   obs_image_based: True
   unnormal_list: ['proto_snap','protos']
   seed: ${seed}
+  verbose: True
 
 upsample_proto_net:
   _target_: xskill.model.network.Mlp
@@ -105,14 +109,14 @@ eval_callback:
   prototype: ${prototype}
   one_hot_prototype: ${one_hot_prototype}
   snap_frames: ${dataset.snap_frames}
-  task_progess_ratio: -1
+  task_progess_ratio: 1
   pretain_model_path: ${pretrain_path}
   pretrain_model_ckpt: ${pretrain_ckpt}
 
 
 eval_cfg:
-  n_evaluations: 2
-  eval_frequency: 20
+  n_evaluations: 19
+  eval_frequency: 10
   pretrain_path: ${pretrain_path}
   pretrain_ckpt: ${pretrain_ckpt}
   bc_resize: ${bc_resize}

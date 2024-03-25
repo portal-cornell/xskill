@@ -11,3 +11,5 @@ ckpt: 79
 device: 'cuda:0'
 plot_top_k: null
 verbose: True
+
+save_clips: True

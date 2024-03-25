@@ -12,6 +12,7 @@ from omegaconf import DictConfig, OmegaConf
 from xskill.model.diffusion_model import get_resnet, replace_bn_with_gn
 from xskill.model.encoder import ResnetConv
 import random
+from tqdm import tqdm
 
 
 @hydra.main(
@@ -35,6 +36,9 @@ def train_diffusion_bc(cfg: DictConfig):
     torch.manual_seed(cfg.seed)
     np.random.seed(cfg.seed)
     random.seed(cfg.seed)
+
+    device = torch.device("cuda")
+    print(device)
 
     # parameters
     pred_horizon = cfg.pred_horizon
@@ -115,7 +119,7 @@ def train_diffusion_bc(cfg: DictConfig):
 
     noise_scheduler = hydra.utils.instantiate(cfg.noise_scheduler)
     # device transfer
-    device = torch.device("cuda")
+    
     _ = nets.to(device)
 
     # Exponential Moving Average
@@ -140,7 +144,7 @@ def train_diffusion_bc(cfg: DictConfig):
     # create eval callbacl
     eval_callback = hydra.utils.instantiate(cfg.eval_callback)
 
-    for epoch_idx in range(cfg.num_epochs):
+    for epoch_idx in tqdm(range(cfg.num_epochs)):
         epoch_loss = list()
         epoch_action_loss = list()
         epoch_proto_prediction_loss = list()
