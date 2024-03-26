@@ -49,11 +49,20 @@ def set_goal(positions, action_item, start_time, time_count):
 
 
 def create_pos(
-    actions=["bottom burner", "top burner"],
-    durations=[40, 20],
+    actions=[
+        "bottom burner",
+        "top burner",
+        "hinge cabinet",
+        "light switch",
+        "microwave",
+        "kettle",
+        "slide cabinet",
+    ],
+    durations=[40, 20, 20, 30, 40, 45, 20],
+    pause=25,
 ):
     assert len(actions) == len(durations)
-    eps_len = sum(durations)
+    eps_len = sum(durations) + len(durations) * pause
     res = np.array([[0.0] * 30 for i in range(eps_len)], dtype="f")
     res[:, 23] = np.array([KETTLE_INIT[0]] * eps_len, dtype="f")
     res[:, 24] = np.array([KETTLE_INIT[1]] * eps_len, dtype="f")
@@ -62,7 +71,7 @@ def create_pos(
     start_time = 0
     for task_index in range(len(actions)):
         res = set_goal(res, actions[task_index], start_time, durations[task_index])
-        start_time = start_time + durations[task_index]
+        start_time = start_time + durations[task_index] + pause
     return res
 
 
