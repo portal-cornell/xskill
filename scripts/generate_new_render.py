@@ -11,14 +11,65 @@ import json
 from xskill.dataset.kitchen_mjl_lowdim_dataset import KitchenMjlLowdimDataset
 from xskill.env.kitchen.v0 import KitchenAllV0
 
-# Create the environment
+ACTION_INDICES = {
+    "bottom burner": np.array([11, 12]),
+    "top burner": np.array([15, 16]),
+    "light switch": np.array([17, 18]),
+    "slide cabinet": np.array([19]),
+    "hinge cabinet": np.array([20, 21]),
+    "microwave": np.array([22]),
+    "kettle": np.array([23, 24, 25, 26, 27, 28, 29]),
+}
+
+ACTION_GOALS = {
+    "bottom burner": np.array([-0.88, -0.01]),
+    "top burner": np.array([-0.92, -0.01]),
+    "light switch": np.array([-0.69, -0.05]),
+    "slide cabinet": np.array([0.37]),
+    "hinge cabinet": np.array([0.0, 1.45]),
+    "microwave": np.array([-0.75]),
+    "kettle": np.array([-0.23, 0.75, 1.62, 0.99, 0.0, 0.0, -0.06]),
+}
+
+KETTLE_INIT = np.array([-0.269, 0.35, 1.6192839, 1.0, 0.0, 0.0, 0.0])
+
+
+def set_goal(positions, action_item, start_time, time_count):
+    goal = ACTION_GOALS[action_item]
+    action_index = ACTION_INDICES[action_item]
+    for i in range(len(action_index)):
+        position_index = action_index[i]
+        goal_position = goal[i]
+        change = np.linspace(
+            positions[start_time][position_index], goal_position, num=time_count
+        )
+        positions[start_time : start_time + time_count, position_index] = change
+        positions[start_time + time_count :, position_index] = goal_position
+    return positions
+
+
+def create_pos(
+    actions=["bottom burner", "top burner"],
+    durations=[40, 20],
+):
+    assert len(actions) == len(durations)
+    eps_len = sum(durations)
+    res = np.array([[0.0] * 30 for i in range(eps_len)], dtype="f")
+    res[:, 23] = np.array([KETTLE_INIT[0]] * eps_len, dtype="f")
+    res[:, 24] = np.array([KETTLE_INIT[1]] * eps_len, dtype="f")
+    res[:, 25] = np.array([KETTLE_INIT[2]] * eps_len, dtype="f")
+    res[:, 26] = np.array([KETTLE_INIT[3]] * eps_len, dtype="f")
+    start_time = 0
+    for task_index in range(len(actions)):
+        res = set_goal(res, actions[task_index], start_time, durations[task_index])
+        start_time = start_time + durations[task_index]
+    return res
 
 
 @hydra.main(
     version_base=None, config_path="../config/simulation", config_name="replay_kitchen"
 )
 def create_dataset(cfg: DictConfig):
-    kitchen_dataset = KitchenMjlLowdimDataset(dataset_dir=cfg.dataset_dir)
     if cfg.embodiment == "robot":
         env = KitchenAllV0(use_abs_action=True, use_sphere_agent=False)
     elif cfg.embodiment == "human":
@@ -34,296 +85,15 @@ def create_dataset(cfg: DictConfig):
     env.reset()
     frames = []
 
-    # total_episode = kitchen_dataset.replay_buffer.n_episodes
-    # assert cfg.end_eps<=total_episode
-
-    eps_data = kitchen_dataset.replay_buffer.get_episode(0)
-    eps_len = len(eps_data["obs"])
-    eps_data["obs"][:, 11] = np.array([2.4577741e-05] * 255, dtype="f")
-    eps_data["obs"][:, 12] = np.array([2.9558922e-07] * 255, dtype="f")
-    eps_data["obs"][:, 15] = np.array([2.4577741e-05] * 255, dtype="f")
-    eps_data["obs"][:, 16] = np.array([2.9558922e-07] * 255, dtype="f")
-    eps_data["obs"][:, 17] = np.array([2.1619626e-05] * 255, dtype="f")
-    eps_data["obs"][:, 18] = np.array([5.0807366e-06] * 255, dtype="f")
-    eps_data["obs"][:, 19] = np.array(
-        [
-            0.0,
-            0.0,
-            0.0,
-            0.00792082,
-            0.01885369,
-            0.03381699,
-            0.05614009,
-            0.08872676,
-            0.12292692,
-            0.15741105,
-            0.1892251,
-            0.2171601,
-            0.24284855,
-            0.2633817,
-            0.28117293,
-            0.29449543,
-            0.3056916,
-            0.31296116,
-            0.31701618,
-            0.3182473,
-            0.3179537,
-            0.3177452,
-            0.31757164,
-            0.3175716,
-            0.31757164,
-            0.2822859,
-            0.24700016,
-            0.21171443,
-            0.17642869,
-            0.14114295,
-            0.10585721,
-            0.07057148,
-            0.03528574,
-            0.0,
-            0.0,
-            0.00792082,
-            0.01885369,
-            0.03381699,
-            0.05614009,
-            0.08872676,
-            0.12292692,
-            0.15741105,
-            0.1892251,
-            0.2171601,
-            0.24284855,
-            0.2633817,
-            0.28117293,
-            0.29449543,
-            0.3056916,
-            0.31296116,
-            0.31701618,
-            0.3182473,
-            0.3179537,
-            0.3177452,
-            0.31757164,
-            0.3175716,
-            0.31757164,
-            0.3177452,
-            0.3179537,
-            0.3182473,
-            0.31701618,
-            0.31296116,
-            0.3056916,
-            0.29449543,
-            0.28117293,
-            0.2633817,
-            0.24284855,
-            0.2171601,
-            0.1892251,
-            0.15741105,
-            0.12292692,
-            0.08872676,
-            0.05614009,
-            0.03381699,
-            0.01885369,
-            0.00792082,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        dtype="f",
-    )
-    eps_data["obs"][:, 20] = np.array([0.0] * 255, dtype="f")
-    eps_data["obs"][:, 21] = np.array([0.0] * 255, dtype="f")
-    eps_data["obs"][:, 22] = np.array([0.0] * 255, dtype="f")
-    eps_data["obs"][:, 23] = np.array([-0.269] * 255, dtype="f")
-    eps_data["obs"][:, 24] = np.array([0.35] * 255, dtype="f")
-    eps_data["obs"][:, 25] = np.array([1.6192839] * 255, dtype="f")
-    eps_data["obs"][:, 26] = np.array([1.0] * 255, dtype="f")
-    eps_data["obs"][:, 27] = np.array([1.95423656e-19] * 255, dtype="f")
-    eps_data["obs"][:, 28] = np.array([-1.13061060e-05] * 255, dtype="f")
-    eps_data["obs"][:, 29] = np.array([-8.45423254e-19] * 255, dtype="f")
-    for i in range(eps_len):
-        reset_pos = np.concatenate([eps_data["obs"][i, :9], eps_data["obs"][i, 9:30]])
-        env.robot.reset(env, reset_pos, env.init_qvel[:].copy())
+    reset_pos = create_pos()
+    for i in range(len(reset_pos)):
+        env.robot.reset(env, reset_pos[i], env.init_qvel[:].copy())
         image_observations = env.render(width=cfg.res, height=cfg.res)
         image_observations = Image.fromarray(image_observations)
         frames.append(image_observations)
 
     if store_video:
-        video_filename = f"rollout_test.mp4"
+        video_filename = f"rollout_test_new.mp4"
         video_filepath = os.path.join(video_path, video_filename)
         # Save the frames as a video using imageio
         imageio.mimsave(video_filepath, frames, fps=30)
