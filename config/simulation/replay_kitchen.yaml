@@ -6,7 +6,7 @@ base_dev_dir: '/home/portal'
 dataset_dir: '${base_dev_dir}/xskill/datasets/kitchen/small_kitchen'
 start_eps: 0
 end_eps: 4
-res: 384
+res: 1024
 embodiment: 'none'
 
 store_video: True

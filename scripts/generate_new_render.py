@@ -19,19 +19,24 @@ ACTION_INDICES = {
     "hinge cabinet": np.array([20, 21]),
     "microwave": np.array([22]),
     "kettle": np.array([23, 24, 25, 26, 27, 28, 29]),
+    "lift kettle": np.array([23, 24, 25, 26, 27, 28, 29]),
 }
 
 ACTION_GOALS = {
-    "bottom burner": np.array([-0.88, -0.01]),
-    "top burner": np.array([-0.92, -0.01]),
-    "light switch": np.array([-0.69, -0.05]),
-    "slide cabinet": np.array([0.37]),
-    "hinge cabinet": np.array([0.0, 1.45]),
-    "microwave": np.array([-0.75]),
-    "kettle": np.array([-0.23, 0.75, 1.62, 0.99, 0.0, 0.0, -0.06]),
+    "bottom burner": [np.array([-0.88, -0.01])],
+    "top burner": [np.array([-0.92, -0.01])],
+    "light switch": [np.array([-0.69, -0.05])],
+    "slide cabinet": [np.array([0.37])],
+    "hinge cabinet": [np.array([0.0, 1.45])],
+    "microwave": [np.array([-0.75])],
+    "kettle": [np.array([-0.23, 0.75, 1.62, 0.99, 0.0, 0.0, -0.06])],
+    "lift kettle": [
+        np.array([-0.26, 0.5, 1.9, 0.99, 0.0, 0.0, -0.06]),
+        np.array([-0.23, 0.75, 1.62, 0.99, 0.0, 0.0, -0.06]),
+    ],
 }
 
-KETTLE_INIT = np.array([-0.269, 0.35, 1.6192839, 1.0, 0.0, 0.0, 0.0])
+KETTLE_INIT = np.array([-0.269, 0.35, 1.62, 0.99, 0.0, 0.0, 0.0])
 
 
 def set_goal(positions, action_item, start_time, time_count):
@@ -39,12 +44,17 @@ def set_goal(positions, action_item, start_time, time_count):
     action_index = ACTION_INDICES[action_item]
     for i in range(len(action_index)):
         position_index = action_index[i]
-        goal_position = goal[i]
-        change = np.linspace(
-            positions[start_time][position_index], goal_position, num=time_count
-        )
-        positions[start_time : start_time + time_count, position_index] = change
-        positions[start_time + time_count :, position_index] = goal_position
+        start = start_time
+        for j in range(len(goal)):
+            duration = int(time_count / len(goal))
+            goal_position = goal[j][i]
+            change = np.linspace(
+                positions[start][position_index], goal_position, num=duration
+            )
+            end_of_action = start + duration
+            positions[start:end_of_action, position_index] = change
+            positions[end_of_action:, position_index] = goal_position
+            start = end_of_action
     return positions
 
 
@@ -79,14 +89,7 @@ def create_pos(
     version_base=None, config_path="../config/simulation", config_name="replay_kitchen"
 )
 def create_dataset(cfg: DictConfig):
-    if cfg.embodiment == "robot":
-        env = KitchenAllV0(use_abs_action=True, use_sphere_agent=False)
-    elif cfg.embodiment == "human":
-        env = KitchenAllV0(use_abs_action=True, use_sphere_agent=True)
-    elif cfg.embodiment == "none":
-        env = KitchenAllV0(use_abs_action=True, use_sphere_agent=False, use_none=True)
-    else:
-        raise NotImplementedError
+    env = KitchenAllV0(use_abs_action=True, use_sphere_agent=False, use_none=True)
     store_video, video_path = cfg.store_video, cfg.video_path
     if store_video:
         import imageio
@@ -94,7 +97,7 @@ def create_dataset(cfg: DictConfig):
     env.reset()
     frames = []
 
-    reset_pos = create_pos()
+    reset_pos = create_pos(["lift kettle", "slide cabinet"], [50, 50], 10)
     for i in range(len(reset_pos)):
         env.robot.reset(env, reset_pos[i], env.init_qvel[:].copy())
         image_observations = env.render(width=cfg.res, height=cfg.res)
@@ -102,7 +105,7 @@ def create_dataset(cfg: DictConfig):
         frames.append(image_observations)
 
     if store_video:
-        video_filename = f"rollout_test_new.mp4"
+        video_filename = f"rollout_test_lift_kettle.mp4"
         video_filepath = os.path.join(video_path, video_filename)
         # Save the frames as a video using imageio
         imageio.mimsave(video_filepath, frames, fps=30)
