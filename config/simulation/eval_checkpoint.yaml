@@ -1,6 +1,7 @@
 base_dev_dir: '/share/portal/pd337'
 hydra.job.config.save_dir: null
-save_dir: '${base_dev_dir}/xskill/experiment/diffusion_bc/kitchen/'
+# save_dir: '${base_dev_dir}/xskill/experiment/diffusion_bc/kitchen/'
+save_dir: '/share/portal/sak299/xskill/experiment/diffusion_bc/kitchen/'
 
 trained_model_path: '${base_dev_dir}/xskill/experiment/diffusion_bc/kitchen/full_training'
 model_path: '${trained_model_path}/ckpt_190.pt'
