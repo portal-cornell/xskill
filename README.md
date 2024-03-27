@@ -21,6 +21,11 @@ Follow these steps to install `XSkill`:
    conda env create -f environment.yml
    conda activate xskill
    pip install -e . 
+   conda install -c conda-forge glew
+   conda install -c conda-forge mesalib
+   conda install -c anaconda mesa-libgl-cos6-x86_64
+   conda install -c menpo glfw3
+
    ```
 
 ## 📦 Simulation Dataset

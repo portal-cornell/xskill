@@ -18,4 +18,4 @@ imageio==2.22.0
 imageio-ffmpeg==0.4.7
 termcolor==2.0.1
 psutil==5.9.2
-dm-control==1.0.9
+dm-control==1.0.16
