@@ -11,24 +11,39 @@ import json
 from xskill.dataset.kitchen_mjl_lowdim_dataset import KitchenMjlLowdimDataset
 from xskill.env.kitchen.v0 import KitchenAllV0
 
+OPENING_TASKS = [
+    "slide cabinet",
+    "full slide cabinet",
+    "hinge cabinet",
+    "full hinge cabinet",
+    "microwave",
+    "full microwave",
+]
+
 ACTION_INDICES = {
     "bottom burner": np.array([11, 12]),
     "top burner": np.array([15, 16]),
     "light switch": np.array([17, 18]),
     "slide cabinet": np.array([19]),
+    "full slide cabinet": np.array([19]),
     "hinge cabinet": np.array([20, 21]),
+    "full hinge cabinet": np.array([20, 21]),
     "microwave": np.array([22]),
+    "full microwave": np.array([22]),
     "kettle": np.array([23, 24, 25, 26, 27, 28, 29]),
     "lift kettle": np.array([23, 24, 25, 26, 27, 28, 29]),
 }
 
 ACTION_GOALS = {
-    "bottom burner": [np.array([-0.88, -0.01])],
-    "top burner": [np.array([-0.92, -0.01])],
+    "bottom burner": [np.array([-0.88, 0])],
+    "top burner": [np.array([-0.92, 0])],
     "light switch": [np.array([-0.69, -0.05])],
     "slide cabinet": [np.array([0.37])],
+    "full slide cabinet": [np.array([0.5])],
     "hinge cabinet": [np.array([0.0, 1.45])],
+    "full hinge cabinet": [np.array([0.0, 3])],
     "microwave": [np.array([-0.75])],
+    "full microwave": [np.array([-1.5])],
     "kettle": [np.array([-0.23, 0.75, 1.62, 0.99, 0.0, 0.0, -0.06])],
     "lift kettle": [
         np.array([-0.26, 0.3, 1.9, 0.99, 0.0, 0.0, -0.06]),
@@ -40,7 +55,7 @@ ACTION_GOALS = {
 KETTLE_INIT = np.array([-0.269, 0.35, 1.62, 0.99, 0.0, 0.0, 0.0])
 
 
-def set_goal(positions, action_item, start_time, time_count, pauses, completion):
+def set_goal(positions, action_item, start_time, time_count, pauses, completion=1):
     goal = ACTION_GOALS[action_item]
     action_index = ACTION_INDICES[action_item]
     for i in range(len(action_index)):
@@ -72,7 +87,7 @@ def create_pos(
     ],
     durations=[[40], [20], [20], [30], [40], [45], [20]],
     pause=[[25], [25], [25], [25], [25], [25], [25]],
-    completions=[1, 1, 1, 1, 1, 1, 1],
+    completions=[1, 1, 1],
 ):
     assert len(actions) == len(durations)
     eps_len = np.sum(durations) + np.sum(pause)
@@ -82,14 +97,20 @@ def create_pos(
     res[:, 25] = np.array([KETTLE_INIT[2]] * eps_len, dtype="f")
     res[:, 26] = np.array([KETTLE_INIT[3]] * eps_len, dtype="f")
     start_time = 0
+    opening_ind = 0
     for task_index in range(len(actions)):
+        if actions[task_index] in OPENING_TASKS:
+            open_completion = completions[opening_ind]
+            opening_ind = opening_ind + 1
+        else:
+            open_completion = 1
         res = set_goal(
             res,
             actions[task_index],
             start_time,
             durations[task_index],
             pause[task_index],
-            completions[task_index],
+            open_completion,
         )
         start_time = (
             start_time + np.sum(durations[task_index]) + np.sum(pause[task_index])
@@ -111,23 +132,38 @@ def create_dataset(cfg: DictConfig):
     env.reset()
     frames = []
 
-    reset_pos_kettle = create_pos(["lift kettle"], [[30, 22, 15]], [[10, 0, 0]])
-    reset_pos_100 = create_pos(
-        ["slide cabinet", "microwave"], [[20], [20]], [[10], [10]], [1, 1]
+    test = create_pos(
+        ["top burner", "full microwave"], [[15], [20]], [[10], [10]], [0.25]
     )
-    reset_pos_75 = create_pos(
-        ["slide cabinet", "microwave"], [[20], [20]], [[10], [10]], [0.75, 0.75]
+    reset_pos_full_microwave = create_pos(
+        ["full microwave", "full slide cabinet", "full hinge cabinet"],
+        [[20], [20], [20]],
+        [[10], [10], [10]],
+        [1, 1, 1],
     )
-    reset_pos_50 = create_pos(
-        ["slide cabinet", "microwave"], [[20], [20]], [[10], [10]], [0.5, 0.5]
+    reset_pos_full_microwave_halved = create_pos(
+        ["full microwave", "full slide cabinet", "full hinge cabinet"],
+        [[20], [20], [20]],
+        [[10], [10], [10]],
+        [0.5, 0.5, 0.5],
     )
-    reset_pos_25 = create_pos(
-        ["slide cabinet", "microwave"], [[20], [20]], [[10], [10]], [0.25, 0.25]
+    reset_pos_microwave = create_pos(
+        ["microwave", "slide cabinet", "hinge cabinet"],
+        [[20], [20], [20]],
+        [[10], [10], [10]],
+        [1, 1, 1],
     )
+
     scenes = np.array(
-        [reset_pos_kettle, reset_pos_100, reset_pos_75, reset_pos_50, reset_pos_25],
+        [
+            test
+            # reset_pos_full_microwave,
+            # reset_pos_full_microwave_halved,
+            # reset_pos_microwave,
+        ],
         dtype=object,
     )
+
     episode_idx = 0
     for reset_pos in scenes:
         for i in range(len(reset_pos)):
@@ -137,7 +173,7 @@ def create_dataset(cfg: DictConfig):
             frames.append(image_observations)
 
         if store_video:
-            video_filename = f"rollout_completions_{episode_idx}.mp4"
+            video_filename = f"rollout_completions_test_completions{episode_idx}.mp4"
             video_filepath = os.path.join(video_path, video_filename)
             # Save the frames as a video using imageio
             imageio.mimsave(video_filepath, frames, fps=30)
