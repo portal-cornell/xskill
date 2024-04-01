@@ -40,7 +40,7 @@ ACTION_GOALS = {
 KETTLE_INIT = np.array([-0.269, 0.35, 1.62, 0.99, 0.0, 0.0, 0.0])
 
 
-def set_goal(positions, action_item, start_time, time_count, pauses):
+def set_goal(positions, action_item, start_time, time_count, pauses, completion):
     goal = ACTION_GOALS[action_item]
     action_index = ACTION_INDICES[action_item]
     for i in range(len(action_index)):
@@ -49,7 +49,7 @@ def set_goal(positions, action_item, start_time, time_count, pauses):
         for j in range(len(goal)):
             duration = time_count[j]
             pause = pauses[j]
-            goal_position = goal[j][i]
+            goal_position = goal[j][i] * float(completion)
             change = np.linspace(
                 positions[start][position_index], goal_position, num=duration
             )
@@ -72,6 +72,7 @@ def create_pos(
     ],
     durations=[[40], [20], [20], [30], [40], [45], [20]],
     pause=[[25], [25], [25], [25], [25], [25], [25]],
+    completions=[1, 1, 1, 1, 1, 1, 1],
 ):
     assert len(actions) == len(durations)
     eps_len = np.sum(durations) + np.sum(pause)
@@ -88,6 +89,7 @@ def create_pos(
             start_time,
             durations[task_index],
             pause[task_index],
+            completions[task_index],
         )
         start_time = (
             start_time + np.sum(durations[task_index]) + np.sum(pause[task_index])
@@ -109,19 +111,38 @@ def create_dataset(cfg: DictConfig):
     env.reset()
     frames = []
 
-    reset_pos = create_pos(["lift kettle"], [[30, 22, 15]], [[10, 0, 0]])
-    for i in range(len(reset_pos)):
-        env.robot.reset(env, reset_pos[i], env.init_qvel[:].copy())
-        image_observations = env.render(width=cfg.res, height=cfg.res)
-        image_observations = Image.fromarray(image_observations)
-        frames.append(image_observations)
+    reset_pos_kettle = create_pos(["lift kettle"], [[30, 22, 15]], [[10, 0, 0]])
+    reset_pos_100 = create_pos(
+        ["slide cabinet", "microwave"], [[20], [20]], [[10], [10]], [1, 1]
+    )
+    reset_pos_75 = create_pos(
+        ["slide cabinet", "microwave"], [[20], [20]], [[10], [10]], [0.75, 0.75]
+    )
+    reset_pos_50 = create_pos(
+        ["slide cabinet", "microwave"], [[20], [20]], [[10], [10]], [0.5, 0.5]
+    )
+    reset_pos_25 = create_pos(
+        ["slide cabinet", "microwave"], [[20], [20]], [[10], [10]], [0.25, 0.25]
+    )
+    scenes = np.array(
+        [reset_pos_kettle, reset_pos_100, reset_pos_75, reset_pos_50, reset_pos_25],
+        dtype=object,
+    )
+    episode_idx = 0
+    for reset_pos in scenes:
+        for i in range(len(reset_pos)):
+            env.robot.reset(env, reset_pos[i], env.init_qvel[:].copy())
+            image_observations = env.render(width=cfg.res, height=cfg.res)
+            image_observations = Image.fromarray(image_observations)
+            frames.append(image_observations)
 
-    if store_video:
-        video_filename = f"rollout_test_lift_kettle.mp4"
-        video_filepath = os.path.join(video_path, video_filename)
-        # Save the frames as a video using imageio
-        imageio.mimsave(video_filepath, frames, fps=30)
-
+        if store_video:
+            video_filename = f"rollout_completions_{episode_idx}.mp4"
+            video_filepath = os.path.join(video_path, video_filename)
+            # Save the frames as a video using imageio
+            imageio.mimsave(video_filepath, frames, fps=30)
+            frames = []
+        episode_idx = episode_idx + 1
     env.close()
 
 
