@@ -1,16 +1,12 @@
-# import d4rl
-import gym
 import numpy as np
 from PIL import Image
 import os
-from skimage.transform import resize
 from tqdm import tqdm
 from omegaconf import DictConfig
 import hydra
-import json
-from xskill.dataset.kitchen_mjl_lowdim_dataset import KitchenMjlLowdimDataset
 from xskill.env.kitchen.v0 import KitchenAllV0
 import numpy as np
+from collections import defaultdict
 
 
 def ease_in_out_sine(x):
@@ -135,37 +131,46 @@ def create_pos(
         kettle_action,
         slide_action,
     ],
+    order=[0, 1, 2, 3, 4, 5, 6],
 ):
-    durations = 0
-    pause = 0
-    for i in range(len(actions)):
-        durations += np.sum(actions[i]["durations"])
-        pause += np.sum(actions[i]["pause"])
-    eps_len = durations + pause
+    assert len(order) == len(actions)
+    groups = defaultdict(list)
+    for ind in range(len(actions)):
+        groups[order[ind]].append(actions[ind])
+    action_groups = sorted(groups.items())
+    action_groups = [list(i) for i in zip(*action_groups)][1]
+    durations = []
+    for group in action_groups:
+        duration = 0
+        for action in group:
+            duration = max(
+                duration, np.sum(action["durations"]) + np.sum(action["pause"])
+            )
+        durations.append(duration)
+    eps_len = np.sum(durations)
     res = np.array([[0.0] * 30 for i in range(eps_len)], dtype="f")
     res[:, 23] = np.array([KETTLE_INIT[0]] * eps_len, dtype="f")
     res[:, 24] = np.array([KETTLE_INIT[1]] * eps_len, dtype="f")
     res[:, 25] = np.array([KETTLE_INIT[2]] * eps_len, dtype="f")
     res[:, 26] = np.array([KETTLE_INIT[3]] * eps_len, dtype="f")
     start_time = 0
-    for task_index in range(len(actions)):
-        action = actions[task_index]["action"]
-        duration = actions[task_index]["durations"]
-        pause = actions[task_index]["pause"]
-        open_completion = actions[task_index]["completion"]
-        ease = actions[task_index]["ease"]
-        res = set_goal(
-            res,
-            action,
-            start_time,
-            duration,
-            pause,
-            open_completion,
-            ease,
-        )
-        start_time = (
-            start_time + np.sum(actions[task_index]["durations"]) + np.sum(pause)
-        )
+    for group_number in range(len(action_groups)):
+        for action in action_groups[group_number]:
+            action_name = action["action"]
+            duration = action["durations"]
+            pause = action["pause"]
+            open_completion = action["completion"]
+            ease = action["ease"]
+            res = set_goal(
+                res,
+                action_name,
+                start_time,
+                duration,
+                pause,
+                open_completion,
+                ease,
+            )
+        start_time = start_time + durations[group_number]
     return res
 
 
@@ -183,23 +188,33 @@ def create_dataset(cfg: DictConfig):
     env.reset()
     frames = []
 
-    burner_microwave = create_pos([top_burner_action, half_microwave_action])
+    burner_microwave = create_pos([top_burner_action, half_microwave_action], [1, 2])
     reset_pos_full_microwave = create_pos(
-        [full_microwave_action, full_hinge_action, full_slide_action]
+        [full_microwave_action, full_hinge_action, full_slide_action], [1, 2, 1]
     )
     reset_pos_full_microwave_halved = create_pos(
-        [half_hinge_action, half_microwave_action, quarter_slide_action]
+        [half_hinge_action, half_microwave_action, quarter_slide_action], [3, 2, 1]
     )
-    reset_pos_microwave = create_pos(
-        [microwave_action, slide_action, hinge_action, lift_kettle_action]
+    reset_pos = create_pos(
+        [
+            half_microwave_action,
+            quarter_slide_action,
+            top_burner_action,
+            lift_kettle_action,
+            light_action,
+            hinge_action,
+        ],
+        [1, 2, 3, 3, 5, 4],
     )
 
+    everything_everywhere_all_at_once = create_pos(order=[1, 1, 1, 1, 1, 1, 1])
     scenes = np.array(
         [
-            burner_microwave,
-            reset_pos_full_microwave,
-            reset_pos_full_microwave_halved,
-            reset_pos_microwave,
+            # burner_microwave,
+            # reset_pos_full_microwave,
+            # reset_pos_full_microwave_halved,
+            reset_pos,
+            # everything_everywhere_all_at_once,
         ],
         dtype=object,
     )
