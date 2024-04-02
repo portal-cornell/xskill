@@ -55,7 +55,35 @@ ACTION_GOALS = {
 KETTLE_INIT = np.array([-0.269, 0.35, 1.62, 0.99, 0.0, 0.0, 0.0])
 
 
-def set_goal(positions, action_item, start_time, time_count, pauses, completion=1):
+def ease_in_out_sine(x):
+    return -(np.cos(np.pi * x) - 1) / 2
+
+
+def ease_linear(x):
+    return x
+
+
+def ease_out_quad(x):
+    return 1 - (1 - x) * (1 - x)
+
+
+def interpolate(start, end, ease_function, duration):
+    steps = (np.array(range(duration))) / (duration - 1)
+    ease = np.vectorize(ease_function)
+    easedValues = ease(steps)
+    res = start + (end - start) * easedValues
+    return res
+
+
+def set_goal(
+    positions,
+    action_item,
+    start_time,
+    time_count,
+    pauses,
+    completion=1,
+    easeFunction=ease_linear,
+):
     goal = ACTION_GOALS[action_item]
     action_index = ACTION_INDICES[action_item]
     for i in range(len(action_index)):
@@ -65,8 +93,8 @@ def set_goal(positions, action_item, start_time, time_count, pauses, completion=
             duration = time_count[j]
             pause = pauses[j]
             goal_position = goal[j][i] * float(completion)
-            change = np.linspace(
-                positions[start][position_index], goal_position, num=duration
+            change = interpolate(
+                positions[start][position_index], goal_position, easeFunction, duration
             )
             end_of_action = start + duration
             positions[start:end_of_action, position_index] = change
@@ -88,6 +116,7 @@ def create_pos(
     durations=[[40], [20], [20], [30], [40], [45], [20]],
     pause=[[25], [25], [25], [25], [25], [25], [25]],
     completions=[1, 1, 1],
+    ease=ease_linear,
 ):
     assert len(actions) == len(durations)
     eps_len = np.sum(durations) + np.sum(pause)
@@ -111,6 +140,7 @@ def create_pos(
             durations[task_index],
             pause[task_index],
             open_completion,
+            ease,
         )
         start_time = (
             start_time + np.sum(durations[task_index]) + np.sum(pause[task_index])
@@ -133,33 +163,46 @@ def create_dataset(cfg: DictConfig):
     frames = []
 
     test = create_pos(
-        ["top burner", "full microwave"], [[15], [20]], [[10], [10]], [0.25]
+        ["top burner", "full microwave"],
+        [[15], [20]],
+        [[10], [10]],
+        [0.25],
+        ease_out_quad,
     )
     reset_pos_full_microwave = create_pos(
         ["full microwave", "full slide cabinet", "full hinge cabinet"],
         [[20], [20], [20]],
         [[10], [10], [10]],
         [1, 1, 1],
+        ease_out_quad,
     )
     reset_pos_full_microwave_halved = create_pos(
         ["full microwave", "full slide cabinet", "full hinge cabinet"],
         [[20], [20], [20]],
         [[10], [10], [10]],
         [0.5, 0.5, 0.5],
+        ease_out_quad,
     )
     reset_pos_microwave = create_pos(
         ["microwave", "slide cabinet", "hinge cabinet"],
         [[20], [20], [20]],
         [[10], [10], [10]],
         [1, 1, 1],
+        ease_out_quad,
     )
 
+    all_sine = create_pos(ease=ease_in_out_sine)
+    all_quad = create_pos(ease=ease_out_quad)
+    all_linear = create_pos(ease=ease_linear)
     scenes = np.array(
         [
-            test
+            # test,
             # reset_pos_full_microwave,
             # reset_pos_full_microwave_halved,
             # reset_pos_microwave,
+            # all_linear,
+            # all_quad,
+            # all_sine,
         ],
         dtype=object,
     )
@@ -173,7 +216,7 @@ def create_dataset(cfg: DictConfig):
             frames.append(image_observations)
 
         if store_video:
-            video_filename = f"rollout_completions_test_completions{episode_idx}.mp4"
+            video_filename = f"test_ease_elastic{episode_idx}.mp4"
             video_filepath = os.path.join(video_path, video_filename)
             # Save the frames as a video using imageio
             imageio.mimsave(video_filepath, frames, fps=30)
