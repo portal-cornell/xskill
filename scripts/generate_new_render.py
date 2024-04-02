@@ -10,15 +10,49 @@ import hydra
 import json
 from xskill.dataset.kitchen_mjl_lowdim_dataset import KitchenMjlLowdimDataset
 from xskill.env.kitchen.v0 import KitchenAllV0
+import numpy as np
 
-OPENING_TASKS = [
-    "slide cabinet",
-    "full slide cabinet",
-    "hinge cabinet",
-    "full hinge cabinet",
-    "microwave",
-    "full microwave",
-]
+
+def ease_in_out_sine(x):
+    return -(np.cos(np.pi * x) - 1) / 2
+
+
+def ease_linear(x):
+    return x
+
+
+def ease_out_quad(x):
+    return 1 - (1 - x) * (1 - x)
+
+
+def create_action(action, duration=[20], pause=[10], completion=1, ease=ease_out_quad):
+    return {
+        "action": action,
+        "durations": duration,
+        "pause": pause,
+        "completion": completion,
+        "ease": ease,
+    }
+
+
+lift_kettle_action = create_action(
+    "lift kettle", [40, 20, 20], [10, 0, 0], ease=ease_in_out_sine
+)
+
+top_burner_action = create_action("top burner")
+bottom_burner_action = create_action("bottom burner")
+microwave_action = create_action("microwave")
+kettle_action = create_action("kettle")
+light_action = create_action("light switch")
+slide_action = create_action("slide cabinet")
+hinge_action = create_action("hinge cabinet")
+
+full_hinge_action = create_action("full hinge cabinet")
+full_slide_action = create_action("full slide cabinet")
+full_microwave_action = create_action("full microwave")
+half_microwave_action = create_action("full microwave", completion=0.5)
+half_hinge_action = create_action("full hinge cabinet", completion=0.5)
+quarter_slide_action = create_action("full slide cabinet", completion=0.25)
 
 ACTION_INDICES = {
     "bottom burner": np.array([11, 12]),
@@ -41,7 +75,7 @@ ACTION_GOALS = {
     "slide cabinet": [np.array([0.37])],
     "full slide cabinet": [np.array([0.5])],
     "hinge cabinet": [np.array([0.0, 1.45])],
-    "full hinge cabinet": [np.array([0.0, 3])],
+    "full hinge cabinet": [np.array([0.0, 1.7])],
     "microwave": [np.array([-0.75])],
     "full microwave": [np.array([-1.5])],
     "kettle": [np.array([-0.23, 0.75, 1.62, 0.99, 0.0, 0.0, -0.06])],
@@ -53,18 +87,6 @@ ACTION_GOALS = {
 }
 
 KETTLE_INIT = np.array([-0.269, 0.35, 1.62, 0.99, 0.0, 0.0, 0.0])
-
-
-def ease_in_out_sine(x):
-    return -(np.cos(np.pi * x) - 1) / 2
-
-
-def ease_linear(x):
-    return x
-
-
-def ease_out_quad(x):
-    return 1 - (1 - x) * (1 - x)
 
 
 def interpolate(start, end, ease_function, duration):
@@ -81,7 +103,7 @@ def set_goal(
     start_time,
     time_count,
     pauses,
-    completion=1,
+    completion,
     easeFunction=ease_linear,
 ):
     goal = ACTION_GOALS[action_item]
@@ -105,45 +127,44 @@ def set_goal(
 
 def create_pos(
     actions=[
-        "bottom burner",
-        "top burner",
-        "hinge cabinet",
-        "light switch",
-        "microwave",
-        "kettle",
-        "slide cabinet",
+        bottom_burner_action,
+        top_burner_action,
+        hinge_action,
+        light_action,
+        microwave_action,
+        kettle_action,
+        slide_action,
     ],
-    durations=[[40], [20], [20], [30], [40], [45], [20]],
-    pause=[[25], [25], [25], [25], [25], [25], [25]],
-    completions=[1, 1, 1],
-    ease=ease_linear,
 ):
-    assert len(actions) == len(durations)
-    eps_len = np.sum(durations) + np.sum(pause)
+    durations = 0
+    pause = 0
+    for i in range(len(actions)):
+        durations += np.sum(actions[i]["durations"])
+        pause += np.sum(actions[i]["pause"])
+    eps_len = durations + pause
     res = np.array([[0.0] * 30 for i in range(eps_len)], dtype="f")
     res[:, 23] = np.array([KETTLE_INIT[0]] * eps_len, dtype="f")
     res[:, 24] = np.array([KETTLE_INIT[1]] * eps_len, dtype="f")
     res[:, 25] = np.array([KETTLE_INIT[2]] * eps_len, dtype="f")
     res[:, 26] = np.array([KETTLE_INIT[3]] * eps_len, dtype="f")
     start_time = 0
-    opening_ind = 0
     for task_index in range(len(actions)):
-        if actions[task_index] in OPENING_TASKS:
-            open_completion = completions[opening_ind]
-            opening_ind = opening_ind + 1
-        else:
-            open_completion = 1
+        action = actions[task_index]["action"]
+        duration = actions[task_index]["durations"]
+        pause = actions[task_index]["pause"]
+        open_completion = actions[task_index]["completion"]
+        ease = actions[task_index]["ease"]
         res = set_goal(
             res,
-            actions[task_index],
+            action,
             start_time,
-            durations[task_index],
-            pause[task_index],
+            duration,
+            pause,
             open_completion,
             ease,
         )
         start_time = (
-            start_time + np.sum(durations[task_index]) + np.sum(pause[task_index])
+            start_time + np.sum(actions[task_index]["durations"]) + np.sum(pause)
         )
     return res
 
@@ -162,47 +183,23 @@ def create_dataset(cfg: DictConfig):
     env.reset()
     frames = []
 
-    test = create_pos(
-        ["top burner", "full microwave"],
-        [[15], [20]],
-        [[10], [10]],
-        [0.25],
-        ease_out_quad,
-    )
+    burner_microwave = create_pos([top_burner_action, half_microwave_action])
     reset_pos_full_microwave = create_pos(
-        ["full microwave", "full slide cabinet", "full hinge cabinet"],
-        [[20], [20], [20]],
-        [[10], [10], [10]],
-        [1, 1, 1],
-        ease_out_quad,
+        [full_microwave_action, full_hinge_action, full_slide_action]
     )
     reset_pos_full_microwave_halved = create_pos(
-        ["full microwave", "full slide cabinet", "full hinge cabinet"],
-        [[20], [20], [20]],
-        [[10], [10], [10]],
-        [0.5, 0.5, 0.5],
-        ease_out_quad,
+        [half_hinge_action, half_microwave_action, quarter_slide_action]
     )
     reset_pos_microwave = create_pos(
-        ["microwave", "slide cabinet", "hinge cabinet"],
-        [[20], [20], [20]],
-        [[10], [10], [10]],
-        [1, 1, 1],
-        ease_out_quad,
+        [microwave_action, slide_action, hinge_action, lift_kettle_action]
     )
 
-    all_sine = create_pos(ease=ease_in_out_sine)
-    all_quad = create_pos(ease=ease_out_quad)
-    all_linear = create_pos(ease=ease_linear)
     scenes = np.array(
         [
-            # test,
-            # reset_pos_full_microwave,
-            # reset_pos_full_microwave_halved,
-            # reset_pos_microwave,
-            # all_linear,
-            # all_quad,
-            # all_sine,
+            burner_microwave,
+            reset_pos_full_microwave,
+            reset_pos_full_microwave_halved,
+            reset_pos_microwave,
         ],
         dtype=object,
     )
@@ -216,7 +213,7 @@ def create_dataset(cfg: DictConfig):
             frames.append(image_observations)
 
         if store_video:
-            video_filename = f"test_ease_elastic{episode_idx}.mp4"
+            video_filename = f"test_configs{episode_idx}.mp4"
             video_filepath = os.path.join(video_path, video_filename)
             # Save the frames as a video using imageio
             imageio.mimsave(video_filepath, frames, fps=30)
