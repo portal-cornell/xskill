@@ -7,48 +7,8 @@ import hydra
 from xskill.env.kitchen.v0 import KitchenAllV0
 import numpy as np
 from collections import defaultdict
+from actions import *
 
-
-def ease_in_out_sine(x):
-    return -(np.cos(np.pi * x) - 1) / 2
-
-
-def ease_linear(x):
-    return x
-
-
-def ease_out_quad(x):
-    return 1 - (1 - x) * (1 - x)
-
-
-def create_action(action, duration=[20], pause=[10], completion=1, ease=ease_out_quad):
-    return {
-        "action": action,
-        "durations": duration,
-        "pause": pause,
-        "completion": completion,
-        "ease": ease,
-    }
-
-
-lift_kettle_action = create_action(
-    "lift kettle", [40, 20, 20], [10, 0, 0], ease=ease_in_out_sine
-)
-
-top_burner_action = create_action("top burner")
-bottom_burner_action = create_action("bottom burner")
-microwave_action = create_action("microwave")
-kettle_action = create_action("kettle")
-light_action = create_action("light switch")
-slide_action = create_action("slide cabinet")
-hinge_action = create_action("hinge cabinet")
-
-full_hinge_action = create_action("full hinge cabinet")
-full_slide_action = create_action("full slide cabinet")
-full_microwave_action = create_action("full microwave")
-half_microwave_action = create_action("full microwave", completion=0.5)
-half_hinge_action = create_action("full hinge cabinet", completion=0.5)
-quarter_slide_action = create_action("full slide cabinet", completion=0.25)
 
 ACTION_INDICES = {
     "bottom burner": np.array([11, 12]),
@@ -108,22 +68,18 @@ def set_goal(
     """
     Updates positions and orientations in the environment according to an action
 
-        Parameters:
-            positions: ndarray
-                2D array containing coordinates of the placement of objects in the kitchen
-            action_item: set
-                dictionary representing the action to be performed
-            start_time: int
-                the number of time units from the beginning of the simulation to start performing the action
-            time_count: int list
-                the number of time units it takes to perform each subaction
-            pauses:
-                the number of time units to pause after each subaction
-            completion:
-                the fraction to open the object for hinge action, slide action, and microwave action
+    Parameters:
+    ----------
+    positions (ndarray): 2D array containing coordinates of the placement of objects in the kitchen
+    action_item (set): dictionary of the action to be performed
+    start_time (int): the number of time units from the beginning of the simulation to start performing the action
+    time_count (int list): the number of time units it takes to perform each subaction
+    pauses (int list): the number of time units to pause after each subaction
+    completion (float): the fraction to open the object for hinge action, slide action, and microwave action
 
-        Returns:
-            numpy array updated with this action
+    Returns:
+    ----------
+    numpy array updated with this action
     """
     goal = ACTION_GOALS[action_item]
     action_index = ACTION_INDICES[action_item]
@@ -159,13 +115,14 @@ def create_pos(
     """
     create the positions to render a series of actions
 
-        Parameters:
-            actions: dict list
-                each dictionary represents an action to be performed
-            order: int list
-                the order to perform the list of actions. the action at index i
-                will be performed order[i] into the sequence. Use duplicate values
-                to indicate actions starting at the same time.
+    Parameters:
+    ----------
+    actions (dict list): each dictionary represents an action to be performed
+    order (int list): the order to perform the list of actions. the action at index i will be performed order[i] into the sequence. Use duplicate values to indicate actions starting at the same time.
+
+    Returns:
+    ----------
+    numpy array representing the full sequence of actions
     """
     assert len(order) == len(actions)
     groups = defaultdict(list)
@@ -237,7 +194,7 @@ def create_renders(cfg: DictConfig):
             top_burner_action,
             lift_kettle_action,
             light_action,
-            hinge_action,
+            fast_hinge_action,
         ],
         [1, 2, 3, 3, 5, 4],
     )
