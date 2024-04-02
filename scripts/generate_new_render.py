@@ -86,6 +86,9 @@ KETTLE_INIT = np.array([-0.269, 0.35, 1.62, 0.99, 0.0, 0.0, 0.0])
 
 
 def interpolate(start, end, ease_function, duration):
+    """
+    Interpolate between the start and end points using a desired ease function
+    """
     steps = (np.array(range(duration))) / (duration - 1)
     ease = np.vectorize(ease_function)
     easedValues = ease(steps)
@@ -102,6 +105,26 @@ def set_goal(
     completion,
     easeFunction=ease_linear,
 ):
+    """
+    Updates positions and orientations in the environment according to an action
+
+        Parameters:
+            positions: ndarray
+                2D array containing coordinates of the placement of objects in the kitchen
+            action_item: set
+                dictionary representing the action to be performed
+            start_time: int
+                the number of time units from the beginning of the simulation to start performing the action
+            time_count: int list
+                the number of time units it takes to perform each subaction
+            pauses:
+                the number of time units to pause after each subaction
+            completion:
+                the fraction to open the object for hinge action, slide action, and microwave action
+
+        Returns:
+            numpy array updated with this action
+    """
     goal = ACTION_GOALS[action_item]
     action_index = ACTION_INDICES[action_item]
     for i in range(len(action_index)):
@@ -133,6 +156,17 @@ def create_pos(
     ],
     order=[0, 1, 2, 3, 4, 5, 6],
 ):
+    """
+    create the positions to render a series of actions
+
+        Parameters:
+            actions: dict list
+                each dictionary represents an action to be performed
+            order: int list
+                the order to perform the list of actions. the action at index i
+                will be performed order[i] into the sequence. Use duplicate values
+                to indicate actions starting at the same time.
+    """
     assert len(order) == len(actions)
     groups = defaultdict(list)
     for ind in range(len(actions)):
@@ -179,7 +213,7 @@ def create_pos(
     config_path="../config/simulation",
     config_name="generate_kitchen",
 )
-def create_dataset(cfg: DictConfig):
+def create_renders(cfg: DictConfig):
     env = KitchenAllV0(use_abs_action=True, use_sphere_agent=False, use_none=True)
     store_video, video_path = cfg.store_video, cfg.video_path
     if store_video:
@@ -188,6 +222,7 @@ def create_dataset(cfg: DictConfig):
     env.reset()
     frames = []
 
+    # create some example action sequences
     burner_microwave = create_pos([top_burner_action, half_microwave_action], [1, 2])
     reset_pos_full_microwave = create_pos(
         [full_microwave_action, full_hinge_action, full_slide_action], [1, 2, 1]
@@ -208,6 +243,8 @@ def create_dataset(cfg: DictConfig):
     )
 
     everything_everywhere_all_at_once = create_pos(order=[1, 1, 1, 1, 1, 1, 1])
+
+    # render each action sequence in a different mp4 file
     scenes = np.array(
         [
             # burner_microwave,
@@ -219,6 +256,7 @@ def create_dataset(cfg: DictConfig):
         dtype=object,
     )
 
+    # renders and saves each action sequence in scenes
     episode_idx = 0
     for reset_pos in scenes:
         for i in range(len(reset_pos)):
@@ -228,7 +266,7 @@ def create_dataset(cfg: DictConfig):
             frames.append(image_observations)
 
         if store_video:
-            video_filename = f"test_configs{episode_idx}.mp4"
+            video_filename = f"test_configs_{episode_idx}.mp4"
             video_filepath = os.path.join(video_path, video_filename)
             # Save the frames as a video using imageio
             imageio.mimsave(video_filepath, frames, fps=30)
@@ -238,4 +276,4 @@ def create_dataset(cfg: DictConfig):
 
 
 if __name__ == "__main__":
-    create_dataset()
+    create_renders()
