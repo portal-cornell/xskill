@@ -133,61 +133,27 @@ def label_dataset(cfg: DictConfig):
     )
     pipeline = nn.Sequential(Tr.CenterCrop((112, 112)), normalize)
 
-    clip_list = [20, 150, 247]
-
-    correct_thresholds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-
-    tasks_list = json.load(open(f'{cfg.data_path}/task_completions.json'))
-    count = 0
-    res = [0 for _ in range(11)]
+    T = 50
+    threshold = 20
     for clip_num in range(0, 251, 25):
-        count += 1
-        robot_clip_traj, robot_z = traj_representations(cfg, model, pipeline, 'robot', clip_num)
-        human_clip_traj, human_z = traj_representations(cfg, model, pipeline, 'human', clip_num)
-        dists = torch.cdist(robot_clip_traj, human_clip_traj, p=2)
+        robot_clip_traj, _ = traj_representations(cfg, model, pipeline, 'robot', clip_num)
+        human_clip_traj, _ = traj_representations(cfg, model, pipeline, 'human', clip_num)
+        dists_bw_robot_human = torch.cdist(robot_clip_traj, human_clip_traj, p=2)[T]
+        dists_bw_robot_robot = torch.cdist(robot_clip_traj, robot_clip_traj, p=2)[T]
 
-        closest_to_robot = torch.argmin(dists, dim=1)
-        closest_to_human = torch.argmin(dists, dim=0)
+        # ignore frames within a threshold
+        dists_bw_robot_human[[np.arange(T-threshold, T+threshold)]] = float('inf')
+        dists_bw_robot_robot[[np.arange(T-threshold, T+threshold)]] = float('inf')
 
-        cycled_back = closest_to_human[closest_to_robot]
-
-        diffs = torch.abs(cycled_back - torch.arange(cycled_back.shape[0], device = cfg.device))
-
-        for i, thresh in enumerate(correct_thresholds):
-            correct_class = diffs <= thresh
-            acc = correct_class.sum() / correct_class.shape[0]
-            # print(f'Threshold {thresh}: {acc.item()}')
-            res[i] += acc.item()
+        closest_human_frame = torch.argmin(dists_bw_robot_human).item()
+        closest_robot_frame = torch.argmin(dists_bw_robot_robot).item()
 
         if cfg.save_clips:
-            frame_num = torch.argmax(diffs[20:-20]).item() # ignores frames at the very beginning and end of the episode to see more interesting results
-            output_dir = f'gif_outputs3/{clip_num}_{frame_num}'
+            output_dir = f'gif_outputs2/{clip_num}_{T}'
             os.makedirs(output_dir, exist_ok=True)
-            robot_gif = gif_of_clip(cfg, 'robot', clip_num, frame_num, 8, output_dir)
-            human_gif = gif_of_clip(cfg, 'human', clip_num, closest_to_robot[frame_num], 8, output_dir)
-            returned_robot_gif = gif_of_clip(cfg, 'robot', clip_num, closest_to_human[closest_to_robot[frame_num]], 8, output_dir, cycle=True)
-            dictionary = {
-                'robot_clip_num': clip_num,
-                'human_clip_num': clip_num,
-                'robot_clip_tasks': tasks_list[clip_num],
-                'human_clip_tasks': tasks_list[clip_num]
-            }
-            with open(os.path.join(output_dir, "output.json"), "w") as outfile:
-                json.dump(dictionary, outfile)
-
-    res = np.array(res)
-    res = res / count
-    print(res)
-
-    plt.figure(figsize=(8, 6))
-    plt.plot(correct_thresholds, res)
-    plt.title('Cycle Back Accuracy')
-    plt.xlabel('Frame Threshold')
-    plt.ylabel('Accuracy')
-    plt.grid(True)
-    plt.savefig('bruh.png')
-
-
+            robot_gif = gif_of_clip(cfg, 'robot', clip_num, T, 8, output_dir)
+            human_gif = gif_of_clip(cfg, 'human', clip_num, closest_human_frame, 8, output_dir)
+            returned_robot_gif = gif_of_clip(cfg, 'robot', clip_num, closest_robot_frame, 8, output_dir)
 
 
 if __name__ == "__main__":

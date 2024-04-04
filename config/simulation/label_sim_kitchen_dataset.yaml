@@ -6,7 +6,7 @@ hydra:
 
 resize_shape: [124,124]
 data_path: ${base_dev_dir}/xskill/datasets/kitchen_dataset
-exp_path: '${base_dev_dir}/xskill/experiment/pretrain/orig_batch'
+exp_path: '${base_dev_dir}/xskill/experiment/pretrain/batch_32'
 ckpt: 79
 device: 'cuda:0'
 plot_top_k: null

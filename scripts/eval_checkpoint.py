@@ -89,31 +89,44 @@ def main(cfg: DictConfig):
     
     eval_eps = np.arange(len(eval_mask))[eval_mask]
 
-    robot_res = 0
-    human_res = 0
+    result_dict = {
+        'robot':{},
+        'human':{}
+    }
+
+    speeds = {
+        'robot': [1],
+        'human': [1, 1.3, 1.5]
+    }
+
     for demo_type in ['robot', 'human']:
         cfg.eval_cfg.demo_type = demo_type
-        for seed in eval_eps:
-            cfg.eval_cfg.demo_item = seed.item()
-            num_completed, _ = eval_callback.eval(
-                nets,
-                noise_scheduler,
-                stats,
-                cfg.eval_cfg,
-                save_dir,
-                seed,
-                epoch_num=None
-            )
-            if demo_type == 'robot':
-                robot_res += num_completed
-            else: 
-                human_res += num_completed
-    print('Robot')
-    print(robot_res)
-    print(robot_res / (4*len(eval_eps)))
-    print('Human')
-    print(human_res)
-    print(human_res / (4*len(eval_eps)))
+        for speed in speeds[demo_type]:
+            eval_callback.task_progess_ratio = speed
+            tasks_completed = 0
+            for seed in eval_eps:
+                cfg.eval_cfg.demo_item = seed.item()
+                num_completed, _ = eval_callback.eval(
+                    nets,
+                    noise_scheduler,
+                    stats,
+                    cfg.eval_cfg,
+                    save_dir,
+                    seed,
+                    epoch_num=None
+                )
+                tasks_completed += num_completed
+            result_dict[demo_type][f'{speed}'] = tasks_completed / (4*len(eval_eps))
+    
+    with open("output.json", "w") as outfile:
+        json.dump(result_dict, outfile)
+            
+    # print('Robot')
+    # print(robot_res)
+    # print(robot_res / (4*len(eval_eps)))
+    # print('Human')
+    # print(human_res)
+    # print(human_res / (4*len(eval_eps)))
 
 if __name__ == '__main__':
     main()

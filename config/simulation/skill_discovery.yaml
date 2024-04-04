@@ -5,7 +5,7 @@ hydra:
     dir: '${base_dev_dir}/xskill/experiment/pretrain/${now:%Y-%m-%d_%H-%M-%S}'
 
 seed: 45
-batch_size: 28
+batch_size: 32
 num_workers: 1
 pin_memory: False
 persistent_workers: True

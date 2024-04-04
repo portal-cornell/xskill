@@ -31,7 +31,7 @@ bc_resize: [112,112]
 pretrain_resize: [124,124]
 pretrain_pipeline: ["center_crop_112_112","normalize"]
 
-pretrain_path: '${base_dev_dir}/xskill/experiment/pretrain/orig_batch'
+pretrain_path: '${base_dev_dir}/xskill/experiment/pretrain/batch_32'
 pretrain_ckpt: 79
 # dataset
 raw_representation: True
