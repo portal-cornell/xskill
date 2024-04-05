@@ -15,19 +15,29 @@ import random
 from tqdm import tqdm
 import json
 
-@hydra.main(
-    version_base=None,
-    config_path="../config/simulation",
-    config_name="eval_checkpoint",
-)
-def main(cfg: DictConfig):
-    unique_id = 'reproduce2'
-    save_dir = os.path.join(cfg.save_dir, unique_id)
+def create_policy_nets(cfg):
+    """
+    Creates policy network architecture consisting of:
+    1) Vision Encoder (ResNet)
+    2) Prototype Predictor (Skill Alignment Transformer)
+    3) Noise Predictor (Diffusion Model)
+
+
+    Parameters
+    ----------
+    cfg : DictConfig
+        Specifies model architecture
+
+
+    Returns 
+    -------
+    nets : torch.nn.ModuleDict
+        Dictionary with all three network components
+    """
     pred_horizon = cfg.pred_horizon
     obs_horizon = cfg.obs_horizon
     proto_horizon = cfg.proto_horizon
 
-    
     if cfg.vision_feature_dim == 512:
         vision_encoder = get_resnet("resnet18")
     else:
@@ -36,13 +46,10 @@ def main(cfg: DictConfig):
     vision_encoder = replace_bn_with_gn(vision_encoder)
     vision_feature_dim = cfg.vision_feature_dim
 
-    # observation and action dimensions corrsponding to
-    # the output of PushTEnv
     obs_dim = cfg.obs_dim
     action_dim = cfg.action_dim
     proto_dim = cfg.proto_dim
 
-    # create network object
     if cfg.upsample_proto:
         noise_pred_net = hydra.utils.instantiate(
             cfg.noise_pred_net,
@@ -61,7 +68,7 @@ def main(cfg: DictConfig):
         input_dim=vision_feature_dim * obs_horizon + obs_dim * obs_horizon,
     )
 
-    # the final arch has 3 parts
+    # Complete policy architecture
     nets = nn.ModuleDict({
         "vision_encoder": vision_encoder,
         "proto_pred_net": proto_pred_net,
@@ -72,8 +79,37 @@ def main(cfg: DictConfig):
         upsample_proto_net = hydra.utils.instantiate(cfg.upsample_proto_net)
         nets["upsample_proto_net"] = upsample_proto_net
 
+    return nets
+
+@hydra.main(
+    version_base=None,
+    config_path="../config/simulation",
+    config_name="eval_checkpoint",
+)
+def main(cfg: DictConfig):
+    """
+    Uses trained XSkill policy to evaluate on (19) held out episodes,
+    with subtasks: ['microwave', 'kettle', 'light switch', 'slide cabinet'].
+
+
+    Parameters
+    ----------
+    cfg : DictConfig
+        Specifies configurations for policy networks as well as evaluation details
+
+    Side Effects
+    ------------
+    - Saves gifs of policy rollouts and a json with subtask completion percentages to trained_model_path folder
+
+    Returns 
+    -------
+    None
+    """
+    save_dir = os.path.join(cfg.trained_model_path, 'post_training')
+
+    nets = create_policy_nets(cfg)
     noise_scheduler = hydra.utils.instantiate(cfg.noise_scheduler)
-    # device transfer
+
     device = torch.device("cuda")
     _ = nets.to(device)
 
@@ -95,8 +131,8 @@ def main(cfg: DictConfig):
     }
 
     speeds = {
-        'robot': [1],
-        'human': [1, 1.3, 1.5]
+        'robot': cfg.robot_speeds,
+        'human': cfg.human_speeds
     }
 
     for demo_type in ['robot', 'human']:
@@ -116,17 +152,12 @@ def main(cfg: DictConfig):
                     epoch_num=None
                 )
                 tasks_completed += num_completed
+
             result_dict[demo_type][f'{speed}'] = tasks_completed / (4*len(eval_eps))
     
-    with open("output2.json", "w") as outfile:
+    with open(os.path.join(save_dir, "policy_results.json"), "w") as outfile:
         json.dump(result_dict, outfile)
             
-    # print('Robot')
-    # print(robot_res)
-    # print(robot_res / (4*len(eval_eps)))
-    # print('Human')
-    # print(human_res)
-    # print(human_res / (4*len(eval_eps)))
 
 if __name__ == '__main__':
     main()

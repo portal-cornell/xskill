@@ -1,17 +1,10 @@
 base_dev_dir: '/share/portal/pd337'
 hydra.job.config.save_dir: null
-save_dir: '${base_dev_dir}/xskill/experiment/diffusion_bc/kitchen'
 
 trained_model_path: '${base_dev_dir}/xskill/experiment/diffusion_bc/kitchen/batch_32_policy'
 model_path: '${trained_model_path}/ckpt_195.pt'
 
 project_name: 'kitchen_prototype_diffusion_bc'
-num_epochs: 200
-lr: 1e-4
-weight_decay: 1e-6
-ckpt_frequency: 10
-
-seed: 43
 
 pred_horizon: 16
 obs_horizon: 2
@@ -99,8 +92,8 @@ noise_scheduler:
   clip_sample: True
   prediction_type: 'epsilon'
 
-task_progess_ratio_list: [1]
-demo_type_list: ['robot','human']
+robot_speeds: [1]
+human_speeds: [1, 1.3, 1.5]
 
 eval_callback:
   _target_: xskill.utility.diffusion_bc_callback.visual_diffusion_bc_prediction_callback
@@ -116,7 +109,6 @@ eval_callback:
 
 eval_cfg:
   n_evaluations: 19
-  eval_frequency: 10
   pretrain_path: ${pretrain_path}
   pretrain_ckpt: ${pretrain_ckpt}
   bc_resize: ${bc_resize}
