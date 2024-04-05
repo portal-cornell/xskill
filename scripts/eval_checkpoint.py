@@ -21,7 +21,7 @@ import json
     config_name="eval_checkpoint",
 )
 def main(cfg: DictConfig):
-    unique_id = 'reproduce'
+    unique_id = 'reproduce2'
     save_dir = os.path.join(cfg.save_dir, unique_id)
     pred_horizon = cfg.pred_horizon
     obs_horizon = cfg.obs_horizon
@@ -118,7 +118,7 @@ def main(cfg: DictConfig):
                 tasks_completed += num_completed
             result_dict[demo_type][f'{speed}'] = tasks_completed / (4*len(eval_eps))
     
-    with open("output.json", "w") as outfile:
+    with open("output2.json", "w") as outfile:
         json.dump(result_dict, outfile)
             
     # print('Robot')
