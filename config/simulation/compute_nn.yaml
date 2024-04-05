@@ -8,7 +8,7 @@ ckpt: 79
 device: 'cuda:0'
 
 save_clips: True
-clip_path: '${exp_path}/tcc_gifs'
+clip_path: '${exp_path}/gifs'
 
 correct_thresholds: 10
 

@@ -88,7 +88,7 @@ def main(cfg: DictConfig):
             human_nn_frame = closest_to_robot[frame_num].item()
             tcc_frame = closest_to_human[human_nn_frame].item()
 
-            output_dir = os.path.join(cfg.clip_path, f'{clip_num}_{frame_num}')
+            output_dir = os.path.join(cfg.clip_path, f'tcc/{clip_num}_{frame_num}')
             os.makedirs(output_dir, exist_ok=True)
 
             robot_gif = gif_of_clip(cfg, 'robot', clip_num, frame_num, 8, output_dir) # Start frame (Robot)
