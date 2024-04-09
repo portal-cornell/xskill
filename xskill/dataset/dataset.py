@@ -119,8 +119,9 @@ class EpisodeTrajDataset(torch.utils.data.Dataset):
             for f in completed:
                 if not f.result():
                     raise RuntimeError('Failed to get image!')
-                
+        
         sequence_data = np.stack(frames)  # Shape: (S * X, H, W, C)
+        # print("SEQUENCE DATA SHAPE = ", sequence_data.shape)
 
         return sequence_data
 

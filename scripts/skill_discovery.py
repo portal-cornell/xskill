@@ -39,7 +39,6 @@ def pretrain(cfg: DictConfig):
         steps_per_epoch=steps_per_epoch,
         pretrain_pipeline=pretrain_pipeline,
     )
-
     print("dataset len: ", len(combine_dataset))
     print(combine_dataset[1][0].im_q.shape)
 

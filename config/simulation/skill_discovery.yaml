@@ -5,7 +5,7 @@ hydra:
     dir: '${base_dev_dir}/xskill/experiment/pretrain/${now:%Y-%m-%d_%H-%M-%S}'
 
 seed: 45
-batch_size: 28
+batch_size: 32
 num_workers: 4
 pin_memory: False
 persistent_workers: True
@@ -13,6 +13,7 @@ drop_last: True
 
 resize_shape: [124,124]
 max_get_threads: 24
+
 robot_dataset:
   _target_: xskill.dataset.dataset.EpisodeTrajDataset
   _allowed_dirs: [

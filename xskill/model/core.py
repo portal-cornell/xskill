@@ -179,7 +179,8 @@ class Model(pl.LightningModule):
                 self.pretrain_pipeline(im[j:j + self.slide + 1])
                 for j in range(len(im) - self.slide)
             ])  # (b,slide+1,c,h,w)
-
+            # breakpoint()
+            # import pdb; pdb.set_trace()
             if self.reverse_augment:
                 reverse_im_q = im_q.flip(dims=[1])
                 reverse_im_k = im_k.flip(dims=[1])
