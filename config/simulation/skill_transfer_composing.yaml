@@ -1,4 +1,4 @@
-base_dev_dir: null
+base_dev_dir: '/home/portal'
 hydra.job.config.save_dir: null
 save_dir: '${base_dev_dir}/xskill/experiment/diffusion_bc/kitchen/'
 

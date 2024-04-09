@@ -1,7 +1,10 @@
 import sys
 import os
+
 # hack to import adept envs
-ADEPT_DIR = os.path.join(os.path.dirname(__file__), 'relay_policy_learning', 'adept_envs')
+ADEPT_DIR = os.path.join(
+    os.path.dirname(__file__), "relay_policy_learning", "adept_envs"
+)
 sys.path.append(ADEPT_DIR)
 
 import logging
@@ -52,13 +55,23 @@ class KitchenBase(KitchenTaskRelaxV1):
     )
 
     def __init__(
-        self, dataset_url=None, ref_max_score=None, ref_min_score=None, 
-        use_abs_action=False,use_sphere_agent=False,
+        self,
+        dataset_url=None,
+        ref_max_score=None,
+        ref_min_score=None,
+        use_abs_action=False,
+        use_sphere_agent=False,
+        use_none=False,
         **kwargs
     ):
         self.tasks_to_complete = list(self.TASK_ELEMENTS)
         self.goal_masking = True
-        super(KitchenBase, self).__init__(use_abs_action=use_abs_action,use_sphere_agent=use_sphere_agent, **kwargs)
+        super(KitchenBase, self).__init__(
+            use_abs_action=use_abs_action,
+            use_sphere_agent=use_sphere_agent,
+            use_none=use_none,
+            **kwargs,
+        )
 
     def set_goal_masking(self, goal_masking=True):
         """Sets goal masking for goal-conditioned approaches (like RPL)."""
