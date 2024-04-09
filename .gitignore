@@ -170,3 +170,4 @@ res.*
 renders/
 scripts/gif_outputs/
 rem.sh
+job*
