@@ -38,6 +38,7 @@ lift_kettle_action = create_action(
     "lift kettle", [40, 20, 20], [10, 0, 0], ease=ease_in_out_sine
 )
 
+# v0
 top_burner_action = create_action("top burner")
 bottom_burner_action = create_action("bottom burner")
 microwave_action = create_action("microwave")
@@ -46,6 +47,7 @@ light_action = create_action("light switch")
 slide_action = create_action("slide cabinet")
 hinge_action = create_action("hinge cabinet")
 
+# v1
 fast_top_burner_action = create_action("top burner", duration=[10])
 fast_bottom_burner_action = create_action("bottom burner", duration=[10])
 fast_microwave_action = create_action("microwave", duration=[10])

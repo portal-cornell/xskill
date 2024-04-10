@@ -19,6 +19,7 @@ from xskill.env.kitchen.v0 import KitchenAllV0
 )
 def create_dataset(cfg: DictConfig):
     kitchen_dataset = KitchenMjlLowdimDataset(dataset_dir=cfg.dataset_dir)
+    import pdb; pdb.set_trace()
     if cfg.embodiment == "robot":
         env = KitchenAllV0(use_abs_action=True, use_sphere_agent=False)
     elif cfg.embodiment == "human":
