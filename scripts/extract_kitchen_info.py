@@ -3,7 +3,7 @@ from xskill.env.kitchen.v0 import KitchenAllV0
 from xskill.utility.utils import read_json, write_json
 import numpy as np
 
-base_dev_dir = "/home/portal"
+base_dev_dir = "/share/portal/sak299"
 kd = KitchenMjlLowdimDataset(
     dataset_dir=f"{base_dev_dir}/xskill/datasets/kitchen/kitchen_demos_multitask"
 )

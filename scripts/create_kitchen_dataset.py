@@ -32,6 +32,7 @@ def create_dataset(cfg: DictConfig):
     # assert cfg.end_eps<=total_episode
 
     for eps_idx in tqdm(range(cfg.start_eps, cfg.end_eps)):
+        print(eps_idx)
         eps_data = kitchen_dataset.replay_buffer.get_episode(eps_idx)
         eps_len = len(eps_data['obs'])
         # create save folder

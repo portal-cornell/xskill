@@ -5,7 +5,7 @@ import numpy as np
 
 
 def main():
-    num_process = 10
+    num_process = 1
     interval = int(610 / num_process)
     index = np.arange(0, 610, interval)
     for embodiment in ['robot', 'human']:

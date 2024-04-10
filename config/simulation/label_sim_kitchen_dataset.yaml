@@ -1,4 +1,4 @@
-base_dev_dir: '/share/portal/pd337'
+base_dev_dir: '/share/portal/sak299'
 
 hydra:
   run:
@@ -6,7 +6,7 @@ hydra:
 
 resize_shape: [124,124]
 data_path: ${base_dev_dir}/xskill/datasets/kitchen_dataset
-exp_path: '${base_dev_dir}/xskill/experiment/pretrain/orig_batch'
+exp_path: '${base_dev_dir}/xskill/experiment/pretrain/2024-04-06_13-07-40'
 ckpt: 79
 device: 'cuda:0'
 plot_top_k: null

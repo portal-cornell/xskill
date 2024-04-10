@@ -1,8 +1,8 @@
-base_dev_dir: '/share/portal/pd337'
+base_dev_dir: '/share/portal/sak299'
 hydra.job.config.save_dir: null
 save_dir: '${base_dev_dir}/xskill/experiment/diffusion_bc/kitchen'
 
-trained_model_path: '${base_dev_dir}/xskill/experiment/diffusion_bc/kitchen/original_training'
+trained_model_path: '${base_dev_dir}/xskill/experiment/diffusion_bc/kitchen/d8943d20-108f-4656-ae93-1cee19efaa62'
 model_path: '${trained_model_path}/ckpt_150.pt'
 
 project_name: 'kitchen_prototype_diffusion_bc'
@@ -34,7 +34,7 @@ bc_resize: [112,112]
 pretrain_resize: [124,124]
 pretrain_pipeline: ["center_crop_112_112","normalize"]
 
-pretrain_path: '${base_dev_dir}/xskill/experiment/pretrain/orig_batch'
+pretrain_path: '${base_dev_dir}/xskill/experiment/pretrain/2024-04-06_13-07-40'
 pretrain_ckpt: 79
 # dataset
 raw_representation: True

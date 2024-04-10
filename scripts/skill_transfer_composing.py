@@ -44,10 +44,12 @@ def train_diffusion_bc(cfg: DictConfig):
     pred_horizon = cfg.pred_horizon
     obs_horizon = cfg.obs_horizon
     proto_horizon = cfg.proto_horizon
-
+    print("instantiate dataset")
     dataset = hydra.utils.instantiate(cfg.dataset)
+    print("done")
     # save training data statistics (min, max) for each dim
     stats = dataset.stats
+    print("opening file for writing")
     # open a file for writing in binary mode
     with open(os.path.join(save_dir, "stats.pickle"), "wb") as f:
         # write the dictionary to the file
@@ -87,6 +89,7 @@ def train_diffusion_bc(cfg: DictConfig):
     action_dim = cfg.action_dim
     proto_dim = cfg.proto_dim
 
+    print("creating network object")
     # create network object
     if cfg.upsample_proto:
         noise_pred_net = hydra.utils.instantiate(
@@ -143,7 +146,7 @@ def train_diffusion_bc(cfg: DictConfig):
 
     # create eval callbacl
     eval_callback = hydra.utils.instantiate(cfg.eval_callback)
-
+    print("training")
     for epoch_idx in tqdm(range(cfg.num_epochs)):
         epoch_loss = list()
         epoch_action_loss = list()
