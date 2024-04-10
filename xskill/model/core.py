@@ -198,7 +198,7 @@ class Model(pl.LightningModule):
 
         swav_batch_im_q = torch.cat(swav_batch_im_q, dim=0)
         swav_batch_im_k = torch.cat(swav_batch_im_k, dim=0)
-
+        # import pdb; pdb.set_trace()
         zc_q, zc_k = self.forward(im_q=swav_batch_im_q,
                                   bbox_q=None,
                                   im_k=swav_batch_im_k,

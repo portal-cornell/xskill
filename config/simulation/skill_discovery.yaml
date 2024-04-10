@@ -108,7 +108,7 @@ Model:
 
     nmb_prototypes: ${Model.dim}
     normalize: True
-    start_end: True
+    start_end: False
     goal_condition: False
 
     temporal_transformer_encoder:

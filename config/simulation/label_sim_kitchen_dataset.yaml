@@ -6,7 +6,7 @@ hydra:
 
 resize_shape: [124,124]
 data_path: '${base_dev_dir}/xskill/datasets/kitchen_dataset'
-exp_path: '${base_dev_dir}/xskill/experiment/pretrain/has_79_epochs'
+exp_path: '${base_dev_dir}/xskill/experiment/pretrain/2024-04-09_16-24-14'
 ckpt: 79
 device: 'cuda:0'
 plot_top_k: null
