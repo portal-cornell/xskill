@@ -112,6 +112,7 @@ def main(cfg: DictConfig):
 
     device = torch.device("cuda")
     _ = nets.to(device)
+    nets.eval()
 
     eval_callback = hydra.utils.instantiate(cfg.eval_callback)
     file = open(os.path.join(cfg.trained_model_path, 'stats.pickle'), 'rb')
