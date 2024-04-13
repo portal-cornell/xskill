@@ -113,8 +113,6 @@ def main(cfg: DictConfig):
     device = torch.device("cuda")
     _ = nets.to(device)
 
-    nets.load_state_dict(torch.load(cfg.model_path))
-
     eval_callback = hydra.utils.instantiate(cfg.eval_callback)
     file = open(os.path.join(cfg.trained_model_path, 'stats.pickle'), 'rb')
     stats = pickle.load(file)
@@ -126,37 +124,56 @@ def main(cfg: DictConfig):
     eval_eps = np.arange(len(eval_mask))[eval_mask]
 
     result_dict = {
-        'robot':{},
-        'human':{}
+        'robot':{f'{ckpt_num}': {} for ckpt_num in cfg.checkpoint_list},
+        'human':{f'{ckpt_num}': {} for ckpt_num in cfg.checkpoint_list}
     }
 
     speeds = {
         'robot': cfg.robot_speeds,
         'human': cfg.human_speeds
     }
-
-    for demo_type in ['robot', 'human']:
-        cfg.eval_cfg.demo_type = demo_type
-        for speed in speeds[demo_type]:
-            eval_callback.task_progess_ratio = speed
-            tasks_completed = 0
-            for seed in eval_eps:
-                cfg.eval_cfg.demo_item = seed.item()
-                num_completed, _ = eval_callback.eval(
-                    nets,
-                    noise_scheduler,
-                    stats,
-                    cfg.eval_cfg,
-                    save_dir,
-                    seed,
-                    epoch_num=None
-                )
-                tasks_completed += num_completed
-
-            result_dict[demo_type][f'{speed}'] = tasks_completed / (4*len(eval_eps))
     
+    for i, ckpt_num in enumerate(cfg.checkpoint_list):
+        nets.load_state_dict(torch.load(os.path.join(cfg.trained_model_path, f'ckpt_{ckpt_num}.pt')))
+        for demo_type in ['robot', 'human']:
+            cfg.eval_cfg.demo_type = demo_type
+            for speed in speeds[demo_type]:
+                eval_callback.task_progess_ratio = speed
+                tasks_completed = 0
+                for seed in eval_eps:
+                    cfg.eval_cfg.demo_item = seed.item()
+                    num_completed, _ = eval_callback.eval(
+                        nets,
+                        noise_scheduler,
+                        stats,
+                        cfg.eval_cfg,
+                        save_dir,
+                        seed,
+                        epoch_num=None
+                    )
+                    tasks_completed += num_completed
+
+                result_dict[demo_type][f'{ckpt_num}'][f'{speed}'] = tasks_completed / (4*len(eval_eps))
+                print(result_dict)
+
     with open(os.path.join(save_dir, "policy_results.json"), "w") as outfile:
         json.dump(result_dict, outfile)
+
+    averages = {"robot": {f'{speed}': 0 for speed in speeds['robot']}, "human": {f'{speed}': 0 for speed in speeds['human']}}
+    counts = averages.copy()
+
+    for demo_type, values in result_dict.items():
+        for ckpt_num, acc_dicts in values.items():
+            for exec_speed, acc in acc_dicts.items():
+                averages[demo_type][exec_speed] += acc
+                counts[demo_type][exec_speed] += 1
+
+    for demo_type, values in averages.items():
+        for exec_speed, summed_acc in values.items():
+            averages[demo_type][exec_speed] /= counts[demo_type][exec_speed]
+
+    with open(os.path.join(save_dir, "policy_results_avg.json"), "w") as outfile:
+        json.dump(averages, outfile)
             
 
 if __name__ == '__main__':

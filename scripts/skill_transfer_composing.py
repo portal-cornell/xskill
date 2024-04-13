@@ -22,6 +22,7 @@ from tqdm import tqdm
 )
 def train_diffusion_bc(cfg: DictConfig):
     # create save dir
+    use_wandb = cfg.use_wandb
     unique_id = str(uuid.uuid4())
     save_dir = os.path.join(cfg.save_dir, unique_id)
     cfg.save_dir = save_dir
@@ -29,8 +30,9 @@ def train_diffusion_bc(cfg: DictConfig):
     OmegaConf.save(cfg, os.path.join(save_dir, "hydra_config.yaml"))
     print(f"output_dir: {save_dir}")
     # Set up logger
-    wandb.init(project=cfg.project_name)
-    wandb.config.update(OmegaConf.to_container(cfg))
+    if use_wandb:
+        wandb.init(project=cfg.project_name)
+        wandb.config.update(OmegaConf.to_container(cfg))
 
     #set seed
     torch.manual_seed(cfg.seed)
@@ -243,15 +245,15 @@ def train_diffusion_bc(cfg: DictConfig):
             epoch_loss.append(loss_cpu)
             epoch_action_loss.append(action_loss.item())
             epoch_proto_prediction_loss.append(proto_prediction_loss.item())
-
-        wandb.log({
-            "epoch loss":
-            np.mean(epoch_loss),
-            "epoch action loss":
-            np.mean(epoch_action_loss),
-            "epoch proto prediction loss":
-            np.mean(epoch_proto_prediction_loss),
-        })
+        if use_wandb:
+            wandb.log({
+                "epoch loss":
+                np.mean(epoch_loss),
+                "epoch action loss":
+                np.mean(epoch_action_loss),
+                "epoch proto prediction loss":
+                np.mean(epoch_proto_prediction_loss),
+            })
 
         if epoch_idx % cfg.ckpt_frequency == 0:
             torch.save(
@@ -285,12 +287,13 @@ def train_diffusion_bc(cfg: DictConfig):
                         )
                         total_rewards.append(total_r)
                         order_rewards.append(order_r)
-                    wandb.log({
-                        f"eval_score/{demo_type}_{task_progess_ratio}_total reward":
-                        np.mean(total_rewards),
-                        f"eval_score/{demo_type}_{task_progess_ratio}_order reward":
-                        np.mean(order_rewards),
-                    })
+                    if use_wandb:
+                        wandb.log({
+                            f"eval_score/{demo_type}_{task_progess_ratio}_total reward":
+                            np.mean(total_rewards),
+                            f"eval_score/{demo_type}_{task_progess_ratio}_order reward":
+                            np.mean(order_rewards),
+                        })
                     if demo_type == "robot":
                         break
 

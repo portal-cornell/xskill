@@ -1,8 +1,11 @@
 base_dev_dir: '/share/portal/pd337'
 hydra.job.config.save_dir: null
 
+pretrain_path: '${base_dev_dir}/xskill/experiment/pretrain/batch_32'
+pretrain_ckpt: 79
+
 trained_model_path: '${base_dev_dir}/xskill/experiment/diffusion_bc/kitchen/batch_32_policy'
-model_path: '${trained_model_path}/ckpt_195.pt'
+checkpoint_list: [150, 160, 170, 180, 190]
 
 project_name: 'kitchen_prototype_diffusion_bc'
 
@@ -27,8 +30,7 @@ bc_resize: [112,112]
 pretrain_resize: [124,124]
 pretrain_pipeline: ["center_crop_112_112","normalize"]
 
-pretrain_path: '${base_dev_dir}/xskill/experiment/pretrain/batch_32'
-pretrain_ckpt: 79
+
 # dataset
 raw_representation: True
 prototype: False
@@ -93,7 +95,7 @@ noise_scheduler:
   prediction_type: 'epsilon'
 
 robot_speeds: [1]
-human_speeds: [1, 1.3, 1.5]
+human_speeds: [1, 1.5]
 
 eval_callback:
   _target_: xskill.utility.diffusion_bc_callback.visual_diffusion_bc_prediction_callback

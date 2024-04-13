@@ -126,6 +126,8 @@ class KitchenBCDataset(torch.utils.data.Dataset):
         pipeline=None,
         verbose=False,
         seed=0,
+        paired_data=False,
+        paired_proto_dirs=None,
     ):
         """
         Support 1) raw representation 2) softmax prototype 3) prototype 4) one-hot prototype
@@ -149,6 +151,9 @@ class KitchenBCDataset(torch.utils.data.Dataset):
         self.snap_frames = snap_frames
         self.pipeline = pipeline
         self.unnormal_list = unnormal_list
+        self.paired_data = paired_data
+        if self.paired_data:
+            self.paired_proto_dirs = paired_proto_dirs
 
         self.data_dirs = data_dirs
         self.proto_dirs = proto_dirs
@@ -241,14 +246,18 @@ class KitchenBCDataset(torch.utils.data.Dataset):
         state_data = np.array(state_data, dtype=np.float32)
         return state_data
 
-    def load_proto_and_to_tensor(self, vid):
+    def load_proto_and_to_tensor(self, vid, is_paired=False):
         proto_path = osp.join(self.proto_dirs, os.path.basename(os.path.normpath(vid)))
-        if self.raw_representation:
-            proto_path = os.path.join(proto_path, "traj_representation.json")
-        elif self.softmax_prototype or self.one_hot_prototype:
-            proto_path = os.path.join(proto_path, "softmax_encode_protos.json")
-        elif self.prototype:
-            proto_path = os.path.join(proto_path, "encode_protos.json")
+
+        def add_representation_suffix(path):
+            if self.raw_representation:
+                return os.path.join(path, "traj_representation.json")
+            elif self.softmax_prototype or self.one_hot_prototype:
+                return os.path.join(path , "softmax_encode_protos.json")
+            elif self.prototype:
+                return os.path.join(path, "encode_protos.json")
+
+        proto_path = add_representation_suffix(proto_path)
 
         with open(proto_path, "r") as f:
             proto_data = json.load(f)
@@ -260,10 +269,19 @@ class KitchenBCDataset(torch.utils.data.Dataset):
             proto_data = one_hot_proto
 
         if self.prototype_snap:
-            eps_len = len(proto_data)
+            cur_proto_data = proto_data
+            if self.paired_data:
+                human_proto_path = osp.join(self.paired_proto_dirs, os.path.basename(os.path.normpath(vid)))
+                human_proto_path = add_representation_suffix(human_proto_path)
+                with open(human_proto_path, "r") as f:
+                    human_proto_data = json.load(f)
+                human_proto_data = np.array(human_proto_data, dtype=np.float32) # (T,D)
+                cur_proto_data = human_proto_data
+
+            eps_len = len(cur_proto_data)
             snap_idx = random.sample(list(range(eps_len)), k=self.snap_frames)
             snap_idx.sort()
-            snap = proto_data[snap_idx]
+            snap = cur_proto_data[snap_idx]
             snap = snap.flatten()
             snap = np.tile(snap, (eps_len, 1))  # (T,snap_frams*model_dim)
             return proto_data, snap
@@ -310,7 +328,7 @@ class KitchenBCDataset(torch.utils.data.Dataset):
 
             train_data["obs"].append(self.load_state_and_to_tensor(v))
             if self.prototype_snap:
-                proto_data, proto_snap = self.load_proto_and_to_tensor(v)
+                proto_data, proto_snap = self.load_proto_and_to_tensor(v, is_paired=self.paired_data)
                 train_data["proto_snap"].append(proto_snap)
             else:
                 proto_data = self.load_proto_and_to_tensor(v)
@@ -340,7 +358,6 @@ class KitchenBCDataset(torch.utils.data.Dataset):
             sample_start_idx=sample_start_idx,
             sample_end_idx=sample_end_idx,
         )
-
         # discard unused observations
         nsample["obs"] = nsample["obs"][: self.obs_horizon, :]
         if self.prototype_snap:
