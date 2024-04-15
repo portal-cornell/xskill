@@ -8,7 +8,8 @@ from xskill.env.kitchen.v0 import KitchenAllV0
 import numpy as np
 from collections import defaultdict
 from actions import *
-
+base_dev_dir = "/share/portal/kk837"
+from xskill.utility.utils import read_json
 
 ACTION_INDICES = {
     "bottom burner": np.array([11, 12]),
@@ -93,10 +94,11 @@ def set_goal(
             change = interpolate(
                 positions[start][position_index], goal_position, easeFunction, duration
             )
-            end_of_action = start + duration
-            positions[start:end_of_action, position_index] = change
+            end_of_action = start + duration + pause
+            positions[start:start+pause, position_index] = positions[start, position_index]
+            positions[start+pause:end_of_action, position_index] = change
             positions[end_of_action:, position_index] = goal_position
-            start = end_of_action + pause
+            start = end_of_action
     return positions
 
 
@@ -165,72 +167,119 @@ def create_pos(
     return res
 
 
+# @hydra.main(
+#     version_base=None,
+#     config_path="../config/simulation",
+#     config_name="generate_kitchen",
+# )
+# def create_renders(cfg: DictConfig):
+#     env = KitchenAllV0(use_abs_action=True, use_sphere_agent=False, use_none=True)
+#     store_video, video_path = cfg.store_video, cfg.video_path
+#     if store_video:
+#         import imageio
+
+#     env.reset()
+#     frames = []
+
+#     # create some example action sequences
+#     burner_microwave = create_pos([top_burner_action, half_microwave_action], [1, 2])
+#     reset_pos_full_microwave = create_pos(
+#         [full_microwave_action, full_hinge_action, full_slide_action], [1, 2, 1]
+#     )
+#     reset_pos_full_microwave_halved = create_pos(
+#         [half_hinge_action, half_microwave_action, quarter_slide_action], [3, 2, 1]
+#     )
+#     reset_pos = create_pos(
+#         [
+#             half_microwave_action,
+#             quarter_slide_action,
+#             top_burner_action,
+#             lift_kettle_action,
+#             light_action,
+#             fast_hinge_action,
+#         ],
+#         [1, 2, 3, 3, 5, 4],
+#     )
+
+#     everything_everywhere_all_at_once = create_pos(order=[1, 1, 1, 1, 1, 1, 1])
+
+#     # render each action sequence in a different mp4 file
+#     scenes = np.array(
+#         [
+#             # burner_microwave,
+#             # reset_pos_full_microwave,
+#             # reset_pos_full_microwave_halved,
+#             reset_pos,
+#             # everything_everywhere_all_at_once,
+#         ],
+#         dtype=object,
+#     )
+
+#     # renders and saves each action sequence in scenes
+#     episode_idx = 0
+#     for reset_pos in scenes:
+#         for i in range(len(reset_pos)):
+#             env.robot.reset(env, reset_pos[i], env.init_qvel[:].copy())
+#             image_observations = env.render(width=cfg.res, height=cfg.res)
+#             image_observations = Image.fromarray(image_observations)
+#             frames.append(image_observations)
+
+#         if store_video:
+#             video_filename = f"test_configs_{episode_idx}.mp4"
+#             video_filepath = os.path.join(video_path, video_filename)
+#             # Save the frames as a video using imageio
+#             imageio.mimsave(video_filepath, frames, fps=30)
+#             frames = []
+#         episode_idx = episode_idx + 1
+#     env.close()
+
 @hydra.main(
     version_base=None,
     config_path="../config/simulation",
     config_name="generate_kitchen",
 )
-def create_renders(cfg: DictConfig):
-    env = KitchenAllV0(use_abs_action=True, use_sphere_agent=False, use_none=True)
-    store_video, video_path = cfg.store_video, cfg.video_path
-    if store_video:
-        import imageio
+def generate_render(cfg:DictConfig):
+    task_completions_list = read_json(f"{base_dev_dir}/xskill/datasets/kitchen_dataset/task_completions.json")
+    # breakpoint()
+    for eps_idx, task_list in enumerate(task_completions_list):
+        actions = []
+        for task in task_list:
+            if task == "kettle":
+                actions.append(lift_kettle_action)
+            elif task == "light switch":
+                actions.append(light_action)
+            elif task == "slide cabinet":
+                actions.append(slide_action)
+            elif task == "microwave":
+                actions.append(microwave_action)
+            elif task == "hinge cabinet":
+                actions.append(hinge_action)
+            elif task == "bottom burner":
+                actions.append(bottom_burner_action)
+            elif task == "top burner":
+                actions.append(top_burner_action)
+            else:
+                raise NotImplementedError
+        env = KitchenAllV0(use_abs_action=True, use_sphere_agent=False, use_none=True)
+        video_path = cfg.video_path
+        env.reset()
+        frames = []
 
-    env.reset()
-    frames = []
+        reset_pos = create_pos(actions, list(range(len(actions))))
 
-    # create some example action sequences
-    burner_microwave = create_pos([top_burner_action, half_microwave_action], [1, 2])
-    reset_pos_full_microwave = create_pos(
-        [full_microwave_action, full_hinge_action, full_slide_action], [1, 2, 1]
-    )
-    reset_pos_full_microwave_halved = create_pos(
-        [half_hinge_action, half_microwave_action, quarter_slide_action], [3, 2, 1]
-    )
-    reset_pos = create_pos(
-        [
-            half_microwave_action,
-            quarter_slide_action,
-            top_burner_action,
-            lift_kettle_action,
-            light_action,
-            fast_hinge_action,
-        ],
-        [1, 2, 3, 3, 5, 4],
-    )
-
-    everything_everywhere_all_at_once = create_pos(order=[1, 1, 1, 1, 1, 1, 1])
-
-    # render each action sequence in a different mp4 file
-    scenes = np.array(
-        [
-            # burner_microwave,
-            # reset_pos_full_microwave,
-            # reset_pos_full_microwave_halved,
-            reset_pos,
-            # everything_everywhere_all_at_once,
-        ],
-        dtype=object,
-    )
-
-    # renders and saves each action sequence in scenes
-    episode_idx = 0
-    for reset_pos in scenes:
         for i in range(len(reset_pos)):
             env.robot.reset(env, reset_pos[i], env.init_qvel[:].copy())
             image_observations = env.render(width=cfg.res, height=cfg.res)
             image_observations = Image.fromarray(image_observations)
-            frames.append(image_observations)
-
-        if store_video:
-            video_filename = f"test_configs_{episode_idx}.mp4"
-            video_filepath = os.path.join(video_path, video_filename)
-            # Save the frames as a video using imageio
-            imageio.mimsave(video_filepath, frames, fps=30)
-            frames = []
-        episode_idx = episode_idx + 1
-    env.close()
-
+            video_filepath = os.path.join(video_path, f'{eps_idx}/{i}.png')
+            os.makedirs(os.path.join(video_path, f'{eps_idx}'), exist_ok=True)
+            image_observations.save(video_filepath)
+        env.close()
+        # break
 
 if __name__ == "__main__":
-    create_renders()
+    # create_renders()
+    generate_render()
+
+        
+

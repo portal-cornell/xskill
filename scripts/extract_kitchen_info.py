@@ -3,7 +3,7 @@ from xskill.env.kitchen.v0 import KitchenAllV0
 from xskill.utility.utils import read_json, write_json
 import numpy as np
 
-base_dev_dir = "/home/portal"
+base_dev_dir = "/share/portal/kk837"
 kd = KitchenMjlLowdimDataset(
     dataset_dir=f"{base_dev_dir}/xskill/datasets/kitchen/kitchen_demos_multitask"
 )
@@ -14,9 +14,12 @@ for i in range(kd.replay_buffer.n_episodes):
     eps_data = kd.replay_buffer.get_episode(i)
     reset_pos = np.concatenate([eps_data["obs"][0, :9], eps_data["obs"][0, 9:30]])
     env.robot.reset(env, reset_pos, env.init_qvel[:].copy())
+    completed_tasks = []
     for j in range(len(eps_data["action"])):
         _, _, _, info = env.step(eps_data["action"][j])
-    task_completions.append(info["completed_tasks"])
+        for t in info['completed_tasks']:
+            if t not in completed_tasks: completed_tasks.append(t)
+    task_completions.append(completed_tasks)
 
 task_completions_list = [list(arr) for arr in task_completions]
 

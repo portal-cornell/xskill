@@ -1,11 +1,11 @@
-base_dev_dir: '/home/portal'
+base_dev_dir: '/share/portal/kk837'
 hydra:
   run:
     dir: '${base_dev_dir}/xskill/experiment/pretrain/${now:%Y-%m-%d_%H-%M-%S}'
 
 seed: 45
 batch_size: 28
-num_workers: 14
+num_workers: 12
 pin_memory: False
 persistent_workers: True
 drop_last: True

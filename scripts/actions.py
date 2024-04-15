@@ -34,18 +34,37 @@ def create_action(action, duration=[20], pause=[10], completion=1, ease=ease_out
     }
 
 
+# v0
 lift_kettle_action = create_action(
-    "lift kettle", [40, 20, 20], [10, 0, 0], ease=ease_in_out_sine
+    "lift kettle", duration = [20, 10, 20], pause = [30, 0, 0], ease=ease_linear
+)
+top_burner_action = create_action(
+    "top burner", duration = [30], pause = [30], ease=ease_linear
+)
+bottom_burner_action = create_action(
+    "top burner", duration = [30], pause = [30], ease=ease_linear
+)
+slide_action = create_action(
+    "slide cabinet", duration = [20], pause = [25], ease=ease_linear
+)
+hinge_action = create_action(
+    "hinge cabinet", duration = [30], pause = [25], ease=ease_linear
+)
+microwave_action = create_action(
+    "microwave", duration = [30], pause = [35], ease=ease_linear
+)
+light_action = create_action(
+    "light switch", duration = [10], pause = [35], ease=ease_linear
 )
 
-# v0
-top_burner_action = create_action("top burner")
-bottom_burner_action = create_action("bottom burner")
-microwave_action = create_action("microwave")
+
+# top_burner_action = create_action("top burner")
+# bottom_burner_action = create_action("bottom burner")
+# microwave_action = create_action("microwave")
 kettle_action = create_action("kettle")
-light_action = create_action("light switch")
-slide_action = create_action("slide cabinet")
-hinge_action = create_action("hinge cabinet")
+# light_action = create_action("light switch")
+# slide_action = create_action("slide cabinet")
+# hinge_action = create_action("hinge cabinet")
 
 # v1
 fast_top_burner_action = create_action("top burner", duration=[10])
