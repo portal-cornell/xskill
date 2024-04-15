@@ -42,7 +42,7 @@ top_burner_action = create_action(
     "top burner", duration = [30], pause = [30], ease=ease_linear
 )
 bottom_burner_action = create_action(
-    "top burner", duration = [30], pause = [30], ease=ease_linear
+    "bottom burner", duration = [30], pause = [30], ease=ease_linear
 )
 slide_action = create_action(
     "slide cabinet", duration = [20], pause = [25], ease=ease_linear
