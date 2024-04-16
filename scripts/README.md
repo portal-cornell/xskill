@@ -31,3 +31,11 @@
    ```bash
    python scripts/plot_protos.py
    ```
+
+### Data Processing
+
+1. Generate l2 distance matrices for each robot video with respect to all human z's:
+   ```bash
+   python scripts/generate_human_data_bank.py
+   ```
+
