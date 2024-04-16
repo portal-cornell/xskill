@@ -156,12 +156,12 @@ def main(cfg: DictConfig):
 
                 result_dict[demo_type][f'{ckpt_num}'][f'{speed}'] = tasks_completed / (4*len(eval_eps))
                 print(result_dict)
-
+    
     with open(os.path.join(save_dir, "policy_results.json"), "w") as outfile:
         json.dump(result_dict, outfile)
 
     averages = {"robot": {f'{speed}': 0 for speed in speeds['robot']}, "human": {f'{speed}': 0 for speed in speeds['human']}}
-    counts = averages.copy()
+    counts = {"robot": {f'{speed}': 0 for speed in speeds['robot']}, "human": {f'{speed}': 0 for speed in speeds['human']}}
 
     for demo_type, values in result_dict.items():
         for ckpt_num, acc_dicts in values.items():

@@ -82,6 +82,10 @@ def gif_of_clip(cfg, demo_type, ep_num, frame_num, slide, output_dir, cycle=Fals
     
     return pil_imgs
 
+def repeat_last_proto(encode_protos, eps_len):
+    rep_proto = encode_protos[-1].unsqueeze(0).repeat(eps_len - len(encode_protos), 1)
+    return torch.cat([encode_protos, rep_proto])
+
 def traj_representations(cfg, model, pipeline, demo_type, ep_num, frame_list=None):
     """
     Computes latent representations of a video from embodiment type {demo_type}
@@ -134,4 +138,5 @@ def traj_representations(cfg, model, pipeline, demo_type, ep_num, frame_list=Non
     z = model.encoder_q(im_q, None) # (T, K)
     state_rep = model.encoder_q.get_state_representation(clips, None) # (T, 2, D)
     traj_rep = model.encoder_q.get_traj_representation(state_rep) # (T, D)
+    traj_rep = repeat_last_proto(traj_rep, eps_len)
     return traj_rep, z

@@ -127,7 +127,10 @@ class KitchenBCDataset(torch.utils.data.Dataset):
         verbose=False,
         seed=0,
         paired_data=False,
+        paired_percent=0,
         paired_proto_dirs=None,
+        nearest_neighbor_replacement=False,
+        nearest_neighbor_data_dirs=None,
     ):
         """
         Support 1) raw representation 2) softmax prototype 3) prototype 4) one-hot prototype
@@ -152,8 +155,10 @@ class KitchenBCDataset(torch.utils.data.Dataset):
         self.pipeline = pipeline
         self.unnormal_list = unnormal_list
         self.paired_data = paired_data
-        if self.paired_data:
-            self.paired_proto_dirs = paired_proto_dirs
+        self.paired_percent = paired_percent
+        self.paired_proto_dirs = paired_proto_dirs
+        self.nearest_neighbor_replacement = nearest_neighbor_replacement
+        self.nearest_neighbor_data_dirs = nearest_neighbor_data_dirs
 
         self.data_dirs = data_dirs
         self.proto_dirs = proto_dirs
@@ -246,6 +251,32 @@ class KitchenBCDataset(torch.utils.data.Dataset):
         state_data = np.array(state_data, dtype=np.float32)
         return state_data
 
+    def find_episode_and_frame(self, indices, episode_list, number_list):
+        # Convert episode and number lists to NumPy arrays for vectorized operations
+        episode_array = np.array(episode_list)
+
+        lower_list = number_list[:]
+        lower_list.append(0)
+        lower_array = np.roll(lower_list, 1, axis=0)
+
+        upper_list = number_list[:]
+        upper_list.append(float('inf'))
+        upper_array = np.array(upper_list   )
+
+        # Create a boolean mask for each episode range
+        mask = (indices[:, np.newaxis] >= lower_array) & (indices[:, np.newaxis] < upper_array)
+        
+        # Find the index of the first True value in each row
+        frame_within_episode = np.argmax(mask, axis=1)
+        
+        # Use the index to get the corresponding episode number
+        episode_number = episode_array[frame_within_episode]
+        
+        # Calculate the frame within each episode
+        frame = indices - lower_array[frame_within_episode]
+        
+        return episode_number, frame
+
     def load_proto_and_to_tensor(self, vid, is_paired=False):
         proto_path = osp.join(self.proto_dirs, os.path.basename(os.path.normpath(vid)))
 
@@ -258,7 +289,7 @@ class KitchenBCDataset(torch.utils.data.Dataset):
                 return os.path.join(path, "encode_protos.json")
 
         proto_path = add_representation_suffix(proto_path)
-
+        
         with open(proto_path, "r") as f:
             proto_data = json.load(f)
         proto_data = np.array(proto_data, dtype=np.float32)  # (T,D)
@@ -276,8 +307,44 @@ class KitchenBCDataset(torch.utils.data.Dataset):
                 with open(human_proto_path, "r") as f:
                     human_proto_data = json.load(f)
                 human_proto_data = np.array(human_proto_data, dtype=np.float32) # (T,D)
-                cur_proto_data = human_proto_data
+                cur_proto_data = human_proto_data                
 
+            if self.nearest_neighbor_replacement:
+                l2_dist_path = osp.join(self.nearest_neighbor_data_dirs, os.path.basename(os.path.normpath(vid)))
+                l2_dist_path = os.path.join(l2_dist_path, 'l2_dists.json')
+                with open(l2_dist_path, "r") as f:
+                    l2_dist_data = json.load(f)
+                l2_dist_data = np.array(l2_dist_data, dtype=np.float32)
+                eps_len = len(l2_dist_data)
+                snap_idx = random.sample(list(range(eps_len)), k=self.snap_frames)
+                snap_idx.sort()
+
+                l2_dist_data = l2_dist_data[snap_idx]
+                human_z_idx = np.argmin(l2_dist_data, axis=1)
+
+                with open(os.path.join(self.nearest_neighbor_data_dirs, 'episode_list.json'), 'r') as f:
+                    episode_list = json.load(f)
+
+                with open(os.path.join(self.nearest_neighbor_data_dirs, 'num_zs.json'), 'r') as f:
+                    num_zs = json.load(f)
+
+                z_tilde = []
+                episode_nums, frame_nums = self.find_episode_and_frame(human_z_idx, episode_list, num_zs)
+                for ep_num, frame_num in zip(episode_nums, frame_nums):
+                    human_proto_path = osp.join(self.paired_proto_dirs, os.path.basename(os.path.normpath(str(ep_num))))
+                    human_proto_path = add_representation_suffix(human_proto_path)
+                    with open(human_proto_path, "r") as f:
+                        human_proto_data = json.load(f)
+
+                    # NN Replacement
+                    z_tilde.append(human_proto_data[int(frame_num)])
+
+                snap = np.array(z_tilde, dtype=np.float32)
+                snap = snap.flatten()
+                # TODO: fix the number of times its tiled
+                snap = np.tile(snap, (len(cur_proto_data), 1))  # (T,snap_frams*model_dim)
+                return proto_data, snap
+            
             eps_len = len(cur_proto_data)
             snap_idx = random.sample(list(range(eps_len)), k=self.snap_frames)
             snap_idx.sort()
@@ -321,6 +388,13 @@ class KitchenBCDataset(torch.utils.data.Dataset):
         # HACK. Fix later
         vid = list(self._dir_tree.values())[0]
         print("loading data")
+
+        paired_set = set()
+        if self.paired_data:
+            vid_nums = np.array(vid)
+            np.random.shuffle(vid_nums)
+            paired_set.update(vid_nums[:int(np.random.randint(len(vid) * self.paired_percent))])
+            
         for j, v in tqdm(enumerate(vid), desc="Loading data", disable=not self.verbose):
             if self.obs_image_based:
                 images = self.load_images(v)
@@ -328,7 +402,7 @@ class KitchenBCDataset(torch.utils.data.Dataset):
 
             train_data["obs"].append(self.load_state_and_to_tensor(v))
             if self.prototype_snap:
-                proto_data, proto_snap = self.load_proto_and_to_tensor(v, is_paired=self.paired_data)
+                proto_data, proto_snap = self.load_proto_and_to_tensor(v, is_paired=(v in paired_set))
                 train_data["proto_snap"].append(proto_snap)
             else:
                 proto_data = self.load_proto_and_to_tensor(v)
@@ -375,5 +449,5 @@ class KitchenBCDataset(torch.utils.data.Dataset):
             nsample["images"] = self.transform_images(nsample["images"])
             nsample["images"] = nsample["images"][: self.obs_horizon, :]
             nsample["obs"] = nsample["obs"][: self.obs_horizon, :9]
-
+        
         return nsample

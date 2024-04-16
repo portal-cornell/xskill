@@ -1,10 +1,11 @@
 base_dev_dir: '/share/portal/pd337'
 hydra.job.config.save_dir: null
 
-pretrain_path: '${base_dev_dir}/xskill/experiment/pretrain/batch_32'
+pretrain_path: '${base_dev_dir}/xskill/experiment/pretrain/orig_batch'
 pretrain_ckpt: 79
 
-trained_model_path: '${base_dev_dir}/xskill/experiment/diffusion_bc/kitchen/batch_32_policy'
+policy_name: 'FILL_IN'
+trained_model_path: '${base_dev_dir}/xskill/experiment/diffusion_bc/kitchen/${policy_name}'
 checkpoint_list: [150, 160, 170, 180, 190]
 
 project_name: 'kitchen_prototype_diffusion_bc'
