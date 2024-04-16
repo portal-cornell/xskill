@@ -91,10 +91,14 @@ def main(cfg: DictConfig):
 
     robot_res = 0
     human_res = 0
+    robot_alltasks = 0
+    human_alltasks = 0
+    
     for demo_type in ['robot', 'human']:
         cfg.eval_cfg.demo_type = demo_type
         for seed in eval_eps:
             cfg.eval_cfg.demo_item = seed.item()
+            task_list = ["slide cabinet", "light switch", "kettle", "microwave"]
             num_completed, _ = eval_callback.eval(
                 nets,
                 noise_scheduler,
@@ -102,18 +106,25 @@ def main(cfg: DictConfig):
                 cfg.eval_cfg,
                 save_dir,
                 seed,
-                epoch_num=None
+                epoch_num=None,
+                task_list=task_list
             )
             if demo_type == 'robot':
                 robot_res += num_completed
+                if num_completed == len(task_list):
+                    robot_alltasks += 1
             else: 
                 human_res += num_completed
+                if num_completed == len(task_list):
+                    human_alltasks += 1
     print('Robot')
-    print(robot_res)
-    print(robot_res / (4*len(eval_eps)))
+    print(f"{robot_res} total tasks finished")
+    print(f"{robot_res / (4*len(eval_eps)) * 100}% of tasks finished")
+    print(f"{robot_alltasks / len(eval_eps) * 100}% of episodes completed all tasks")
     print('Human')
-    print(human_res)
-    print(human_res / (4*len(eval_eps)))
+    print(f"{human_res} total tasks finished")
+    print(f"{human_res / (4*len(eval_eps)) * 100}% of tasks finished")
+    print(f"{human_alltasks / len(eval_eps) * 100}% of episodes completed all tasks")
 
 if __name__ == '__main__':
     main()
