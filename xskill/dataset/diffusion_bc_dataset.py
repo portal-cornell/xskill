@@ -251,8 +251,35 @@ class KitchenBCDataset(torch.utils.data.Dataset):
         state_data = np.array(state_data, dtype=np.float32)
         return state_data
 
-    def find_episode_and_frame(self, indices, episode_list, number_list):
-        # Convert episode and number lists to NumPy arrays for vectorized operations
+    def find_episode_and_frame(self, human_z_idx, episode_list, number_list):
+        """
+        Given a list of human z indices from the data bank, the list of episodes 
+        associated with the data bank, and the index numbers associated with each episode,
+        extracts the true episode number and the frame from within that episode.
+
+
+        Parameters
+        ----------
+        human_z_idx : numpy.ndarray
+            List of indices (ranging between 0 and the total number of z's in the bank)
+        episode_list : int list
+            List of episode numbers that were used to generate the bank
+        number_list : int list
+            List of numbers indicating indices of z's corresponding to episodes.
+
+        Ex) human_z_idx = [5, 550]
+            episode_list = [150, 250]
+            number_list = [250, 500] 
+            (human z indices 0-249 come from episode 150, indices 250-499 come from episode 250)
+        
+
+        Returns 
+        -------
+        episode_number : numpy.ndarray
+            episode_number[i] = episode number for which human_z_idx[i] comes from
+        frame : numpy.ndarray
+            frame[i] = frame number within episode_number[i]
+        """
         episode_array = np.array(episode_list)
 
         lower_list = number_list[:]
@@ -261,10 +288,10 @@ class KitchenBCDataset(torch.utils.data.Dataset):
 
         upper_list = number_list[:]
         upper_list.append(float('inf'))
-        upper_array = np.array(upper_list   )
+        upper_array = np.array(upper_list)
 
         # Create a boolean mask for each episode range
-        mask = (indices[:, np.newaxis] >= lower_array) & (indices[:, np.newaxis] < upper_array)
+        mask = (human_z_idx[:, np.newaxis] >= lower_array) & (human_z_idx[:, np.newaxis] < upper_array)
         
         # Find the index of the first True value in each row
         frame_within_episode = np.argmax(mask, axis=1)
@@ -273,7 +300,7 @@ class KitchenBCDataset(torch.utils.data.Dataset):
         episode_number = episode_array[frame_within_episode]
         
         # Calculate the frame within each episode
-        frame = indices - lower_array[frame_within_episode]
+        frame = human_z_idx - lower_array[frame_within_episode]
         
         return episode_number, frame
 
@@ -301,7 +328,7 @@ class KitchenBCDataset(torch.utils.data.Dataset):
 
         if self.prototype_snap:
             cur_proto_data = proto_data
-            if self.paired_data:
+            if self.paired_data: # loads a human sequence of z's as well as the robot z_t
                 human_proto_path = osp.join(self.paired_proto_dirs, os.path.basename(os.path.normpath(vid)))
                 human_proto_path = add_representation_suffix(human_proto_path)
                 with open(human_proto_path, "r") as f:
@@ -309,7 +336,7 @@ class KitchenBCDataset(torch.utils.data.Dataset):
                 human_proto_data = np.array(human_proto_data, dtype=np.float32) # (T,D)
                 cur_proto_data = human_proto_data                
 
-            if self.nearest_neighbor_replacement:
+            if self.nearest_neighbor_replacement: # does nearest neighbor replacement on the robot sequence of z's
                 l2_dist_path = osp.join(self.nearest_neighbor_data_dirs, os.path.basename(os.path.normpath(vid)))
                 l2_dist_path = os.path.join(l2_dist_path, 'l2_dists.json')
                 with open(l2_dist_path, "r") as f:
