@@ -277,7 +277,7 @@ class visual_diffusion_bc_prediction_callback:
         env = KitchenAllV0(use_abs_action=True)
         return env
 
-    def eval(self, nets, noise_scheduler, stats, eval_cfg, save_path, seed, epoch_num=None):
+    def eval(self, nets, noise_scheduler, stats, eval_cfg, save_path, seed, epoch_num=None, task_list=["slide cabinet", "light switch", "kettle", "microwave"]):
         """
         pretrain resize doesn't matter here.
         use bc_resize to resize the env input to desired size
@@ -327,8 +327,7 @@ class visual_diffusion_bc_prediction_callback:
         B = 1
 
         # track completion order
-        task_stack = deque(
-            ["slide cabinet", "light switch", "kettle", "microwave"])
+        task_stack = deque(task_list)
         complete_queue = queue.Queue()
         predict_protos = []
         while not done:
