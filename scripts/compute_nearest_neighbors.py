@@ -135,8 +135,8 @@ def traj_representations(cfg, model, pipeline, demo_type, ep_num, frame_list=Non
     config_name="label_sim_kitchen_dataset",
 )
 def label_dataset(cfg: DictConfig):
+    print("Computing Nearest Neighbors")
     model = load_model(cfg)
-
     normalize = transforms.Normalize(
         mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
     )
@@ -175,6 +175,7 @@ def label_dataset(cfg: DictConfig):
     config_name="label_sim_kitchen_dataset",
 )
 def visualize_nn(cfg: DictConfig, frame_size=266, skip=4, num_rows=4):
+    print("Visualizing Nearest Neighbors")
     model = load_model(cfg)
 
     normalize = transforms.Normalize(
@@ -233,4 +234,4 @@ def visualize_nn(cfg: DictConfig, frame_size=266, skip=4, num_rows=4):
             image.save(os.path.join(output_dir, "timeline.png"))
 
 if __name__ == "__main__":
-    visualize_nn()
+    label_dataset()
