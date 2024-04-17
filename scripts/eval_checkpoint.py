@@ -14,6 +14,7 @@ from xskill.model.encoder import ResnetConv
 import random
 from tqdm import tqdm
 import json
+from xskill.utility.observation_indices import ACTION_INDICES, ACTION_GOALS
 
 def create_policy_nets(cfg):
     """
@@ -80,6 +81,25 @@ def create_policy_nets(cfg):
         nets["upsample_proto_net"] = upsample_proto_net
 
     return nets
+
+def get_attempted_unspecified_tasks(task_list, initial_obs, final_obs, epsilon=1e-3):
+    count = 0
+    obs_diff = np.abs(final_obs - initial_obs)
+    # remove "full _____" tasks that are identical to their corresponding non-full tasks
+    unspecified_tasks = [task for task in ACTION_INDICES \
+                            if task not in task_list \
+                            and (len(task) < 5 or f"{task[5:]}" not in ACTION_INDICES)]
+    for task in task_list:
+        print(f"{task} diff: {obs_diff[ACTION_INDICES[task]]}")
+    print()
+    for task in unspecified_tasks:
+        print(f"{task} diff: {obs_diff[ACTION_INDICES[task]]}")
+        if np.any(obs_diff[ACTION_INDICES[task]] > epsilon):
+            count += 1
+
+    return count
+
+
 
 @hydra.main(
     version_base=None,
@@ -149,9 +169,10 @@ def main(cfg: DictConfig):
                 eval_callback.task_progess_ratio = speed
                 tasks_completed = 0
                 all_correct_count = 0
-                for seed in eval_eps[:1]:
+                num_unspecified_tasks = 0
+                for seed in eval_eps:
                     cfg.eval_cfg.demo_item = seed.item()
-                    num_completed, _ = eval_callback.eval(
+                    num_completed, _, initial_obs, final_obs = eval_callback.eval(
                         nets,
                         noise_scheduler,
                         stats,
@@ -164,10 +185,13 @@ def main(cfg: DictConfig):
                     tasks_completed += num_completed
                     if num_completed == len(task_list):
                         all_correct_count += 1
+                    
+                    num_unspecified_tasks += get_attempted_unspecified_tasks(task_list, initial_obs, final_obs)
 
 
                 result_dict[demo_type][f'{ckpt_num}'][f'{speed}']['share-of-tasks'] = tasks_completed / (4*len(eval_eps))
                 result_dict[demo_type][f'{ckpt_num}'][f'{speed}']['all-tasks'] = all_correct_count / len(eval_eps)
+                result_dict[demo_type][f'{ckpt_num}'][f'{speed}']['num-unspecified'] = num_unspecified_tasks / len(eval_eps)
                 print(result_dict)
 
     with open(os.path.join(save_dir, "policy_results.json"), "w") as outfile:
@@ -175,10 +199,10 @@ def main(cfg: DictConfig):
 
     averages = {
         "robot": {
-            f'{speed}': {'share-of-tasks': 0, 'all-tasks': 0} for speed in speeds['robot']
+            f'{speed}': {'share-of-tasks': 0, 'all-tasks': 0, 'num-unspecified': 0} for speed in speeds['robot']
         }, 
         "human": {
-            f'{speed}': {'share-of-tasks': 0, 'all-tasks': 0} for speed in speeds['human']
+            f'{speed}': {'share-of-tasks': 0, 'all-tasks': 0, 'num-unspecified': 0} for speed in speeds['human']
         }
     }
     counts = {
@@ -191,12 +215,14 @@ def main(cfg: DictConfig):
             for exec_speed, acc in acc_dicts.items():
                 averages[demo_type][exec_speed]['share-of-tasks'] += acc['share-of-tasks']
                 averages[demo_type][exec_speed]['all-tasks'] += acc['all-tasks']
+                averages[demo_type][exec_speed]['num-unspecified'] += acc['num-unspecified']
                 counts[demo_type][exec_speed] += 1
 
     for demo_type, values in averages.items():
         for exec_speed, summed_acc in values.items():
             averages[demo_type][exec_speed]['share-of-tasks'] /= counts[demo_type][exec_speed]
             averages[demo_type][exec_speed]['all-tasks'] /= counts[demo_type][exec_speed]
+            averages[demo_type][exec_speed]['num-unspecified'] /= counts[demo_type][exec_speed]
 
     with open(os.path.join(save_dir, "policy_results_avg.json"), "w") as outfile:
         json.dump(averages, outfile)
