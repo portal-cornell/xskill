@@ -12,6 +12,8 @@ from tqdm import tqdm
 from pathlib import Path
 from tqdm import tqdm
 import cv2
+from xskill.utility.eval_utils import gif_of_clip
+from omegaconf import DictConfig
 
 normalize_threshold = 5e-2
 
@@ -129,8 +131,11 @@ class KitchenBCDataset(torch.utils.data.Dataset):
         paired_data=False,
         paired_percent=0,
         paired_proto_dirs=None,
+        paired_demo_img_path=None,
         nearest_neighbor_replacement=False,
+        replace_percent=0,
         nearest_neighbor_data_dirs=None,
+        save_lookups=False,
     ):
         """
         Support 1) raw representation 2) softmax prototype 3) prototype 4) one-hot prototype
@@ -157,8 +162,11 @@ class KitchenBCDataset(torch.utils.data.Dataset):
         self.paired_data = paired_data
         self.paired_percent = paired_percent
         self.paired_proto_dirs = paired_proto_dirs
+        self.paired_demo_img_path = paired_demo_img_path
         self.nearest_neighbor_replacement = nearest_neighbor_replacement
+        self.replace_percent = replace_percent
         self.nearest_neighbor_data_dirs = nearest_neighbor_data_dirs
+        self.save_lookups = save_lookups
 
         self.data_dirs = data_dirs
         self.proto_dirs = proto_dirs
@@ -302,9 +310,9 @@ class KitchenBCDataset(torch.utils.data.Dataset):
         # Calculate the frame within each episode
         frame = human_z_idx - lower_array[frame_within_episode]
         
-        return episode_number, frame
+        return episode_number.astype(np.int32), frame.astype(np.int32)
 
-    def load_proto_and_to_tensor(self, vid, is_paired=False):
+    def load_proto_and_to_tensor(self, vid, is_paired=False, is_lookup=False):
         proto_path = osp.join(self.proto_dirs, os.path.basename(os.path.normpath(vid)))
 
         def add_representation_suffix(path):
@@ -328,7 +336,7 @@ class KitchenBCDataset(torch.utils.data.Dataset):
 
         if self.prototype_snap:
             cur_proto_data = proto_data
-            if self.paired_data: # loads a human sequence of z's as well as the robot z_t
+            if is_paired: # loads a human sequence of z's as well as the robot z_t
                 human_proto_path = osp.join(self.paired_proto_dirs, os.path.basename(os.path.normpath(vid)))
                 human_proto_path = add_representation_suffix(human_proto_path)
                 with open(human_proto_path, "r") as f:
@@ -336,7 +344,7 @@ class KitchenBCDataset(torch.utils.data.Dataset):
                 human_proto_data = np.array(human_proto_data, dtype=np.float32) # (T,D)
                 cur_proto_data = human_proto_data                
 
-            if self.nearest_neighbor_replacement: # does nearest neighbor replacement on the robot sequence of z's
+            if is_lookup: # does nearest neighbor replacement on the robot sequence of z's
                 l2_dist_path = osp.join(self.nearest_neighbor_data_dirs, os.path.basename(os.path.normpath(vid)))
                 l2_dist_path = os.path.join(l2_dist_path, 'l2_dists.json')
                 with open(l2_dist_path, "r") as f:
@@ -357,7 +365,11 @@ class KitchenBCDataset(torch.utils.data.Dataset):
 
                 z_tilde = []
                 episode_nums, frame_nums = self.find_episode_and_frame(human_z_idx, episode_list, num_zs)
-                for ep_num, frame_num in zip(episode_nums, frame_nums):
+                cfg = DictConfig({'data_path': self.paired_demo_img_path, 'resize_shape': [124,124]})
+                reconstructed_video = []
+                orig_video = []
+                robot_vid_num = int(os.path.basename(os.path.normpath(vid)))
+                for k, (ep_num, frame_num) in enumerate(zip(episode_nums, frame_nums)):
                     human_proto_path = osp.join(self.paired_proto_dirs, os.path.basename(os.path.normpath(str(ep_num))))
                     human_proto_path = add_representation_suffix(human_proto_path)
                     with open(human_proto_path, "r") as f:
@@ -365,7 +377,17 @@ class KitchenBCDataset(torch.utils.data.Dataset):
 
                     # NN Replacement
                     z_tilde.append(human_proto_data[int(frame_num)])
+                    
+                    if self.save_lookups and k % 9 == 0:
+                        human_imgs = gif_of_clip(cfg, 'human', ep_num, frame_num, 8, None, save=False)
+                        robot_imgs = gif_of_clip(cfg, 'robot', robot_vid_num, snap_idx[k], 8, None, save=False)
+                        reconstructed_video.extend(human_imgs)
+                        orig_video.extend(robot_imgs)
 
+                if self.save_lookups:
+                    reconstructed_video[0].save(os.path.join(self.nearest_neighbor_data_dirs, str(robot_vid_num), f'constructed_human.gif'), save_all=True, append_images=reconstructed_video[1:], duration=200, loop=0)
+                    orig_video[0].save(os.path.join(self.nearest_neighbor_data_dirs, str(robot_vid_num), f'orig_robot.gif'), save_all=True, append_images=orig_video[1:], duration=200, loop=0)
+                
                 snap = np.array(z_tilde, dtype=np.float32)
                 snap = snap.flatten()
                 # TODO: fix the number of times its tiled
@@ -412,6 +434,7 @@ class KitchenBCDataset(torch.utils.data.Dataset):
         return images_tensor
 
     def load_data(self, train_data):
+        assert not (self.paired_data and self.nearest_neighbor_replacement)
         # HACK. Fix later
         vid = list(self._dir_tree.values())[0]
         print("loading data")
@@ -420,8 +443,14 @@ class KitchenBCDataset(torch.utils.data.Dataset):
         if self.paired_data:
             vid_nums = np.array(vid)
             np.random.shuffle(vid_nums)
-            paired_set.update(vid_nums[:int(np.random.randint(len(vid) * self.paired_percent))])
-            
+            paired_set.update(vid_nums[:int(len(vid) * self.paired_percent)])
+
+        lookup_set = set()
+        if self.nearest_neighbor_replacement:
+            vid_nums = np.array(vid)
+            np.random.shuffle(vid_nums)
+            lookup_set.update(vid_nums[:int(len(vid) * self.replace_percent)])
+        
         for j, v in tqdm(enumerate(vid), desc="Loading data", disable=not self.verbose):
             if self.obs_image_based:
                 images = self.load_images(v)
@@ -429,7 +458,7 @@ class KitchenBCDataset(torch.utils.data.Dataset):
 
             train_data["obs"].append(self.load_state_and_to_tensor(v))
             if self.prototype_snap:
-                proto_data, proto_snap = self.load_proto_and_to_tensor(v, is_paired=(v in paired_set))
+                proto_data, proto_snap = self.load_proto_and_to_tensor(v, is_paired=(v in paired_set), is_lookup=(v in lookup_set))
                 train_data["proto_snap"].append(proto_snap)
             else:
                 proto_data = self.load_proto_and_to_tensor(v)
