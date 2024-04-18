@@ -1,0 +1,14 @@
+base_dev_dir: '/share/portal/pd337'
+
+resize_shape: [124,124]
+data_path: ${base_dev_dir}/xskill/datasets/kitchen_dataset
+task_json_path: ${data_path}/task_completions.json
+exp_path: '${base_dev_dir}/xskill/experiment/pretrain/batch_32'
+ckpt: 79
+device: 'cuda:0'
+
+save_clips: True
+clip_path: '${exp_path}/gifs'
+
+correct_thresholds: 10
+

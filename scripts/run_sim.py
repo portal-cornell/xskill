@@ -5,7 +5,7 @@ import numpy as np
 
 base_dev_dir = "/home/portal"
 kd = KitchenMjlLowdimDataset(
-    dataset_dir=f"{base_dev_dir}/xskill/small_datasets/kitchen/kitchen_demos_multitask"
+    dataset_dir=f"{base_dev_dir}/xskill/datasets/kitchen/kitchen_demos_multitask"
 )
 task_completions = []
 env = KitchenAllV0(use_abs_action=True, use_sphere_agent=True)
