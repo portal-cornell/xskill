@@ -1,11 +1,12 @@
-base_dev_dir: '/share/portal/kk837'
+base_dev_dir: '/share/portal/pd337'
+
 hydra:
   run:
     dir: '${base_dev_dir}/xskill/experiment/pretrain/${now:%Y-%m-%d_%H-%M-%S}'
 
 seed: 45
 batch_size: 28
-num_workers: 12
+num_workers: 1
 pin_memory: False
 persistent_workers: True
 drop_last: True
@@ -52,7 +53,7 @@ Trainer:
   devices: [0]
   max_epochs: 81
   enable_progress_bar: False
-  log_every_n_steps: 100
+  log_every_n_steps: 10
 
 n_layer: 8
 

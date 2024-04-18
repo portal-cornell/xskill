@@ -12,6 +12,7 @@ from omegaconf import DictConfig, OmegaConf
 from xskill.model.diffusion_model import get_resnet, replace_bn_with_gn
 from xskill.model.encoder import ResnetConv
 import random
+from tqdm import tqdm
 
 
 @hydra.main(
@@ -21,6 +22,7 @@ import random
 )
 def train_diffusion_bc(cfg: DictConfig):
     # create save dir
+    use_wandb = cfg.use_wandb
     unique_id = str(uuid.uuid4())
     save_dir = os.path.join(cfg.save_dir, unique_id)
     cfg.save_dir = save_dir
@@ -28,13 +30,17 @@ def train_diffusion_bc(cfg: DictConfig):
     OmegaConf.save(cfg, os.path.join(save_dir, "hydra_config.yaml"))
     print(f"output_dir: {save_dir}")
     # Set up logger
-    wandb.init(project=cfg.project_name)
-    wandb.config.update(OmegaConf.to_container(cfg))
+    if use_wandb:
+        wandb.init(project=cfg.project_name)
+        wandb.config.update(OmegaConf.to_container(cfg))
 
     #set seed
     torch.manual_seed(cfg.seed)
     np.random.seed(cfg.seed)
     random.seed(cfg.seed)
+
+    device = torch.device("cuda")
+    print(device)
 
     # parameters
     pred_horizon = cfg.pred_horizon
@@ -115,7 +121,7 @@ def train_diffusion_bc(cfg: DictConfig):
 
     noise_scheduler = hydra.utils.instantiate(cfg.noise_scheduler)
     # device transfer
-    device = torch.device("cuda")
+    
     _ = nets.to(device)
 
     # Exponential Moving Average
@@ -140,7 +146,7 @@ def train_diffusion_bc(cfg: DictConfig):
     # create eval callbacl
     eval_callback = hydra.utils.instantiate(cfg.eval_callback)
 
-    for epoch_idx in range(cfg.num_epochs):
+    for epoch_idx in tqdm(range(cfg.num_epochs)):
         epoch_loss = list()
         epoch_action_loss = list()
         epoch_proto_prediction_loss = list()
@@ -190,10 +196,13 @@ def train_diffusion_bc(cfg: DictConfig):
                 )
             else:
                 # feed in: (B,obs_feature*obs_horizon),(B,snap_frame,D)
+                proto_cond = torch.clone(nproto).detach()
+                if cfg.unconditioned_policy:
+                    proto_cond.fill_(0)
                 obs_cond = torch.cat(
                     [
                         obs_feature.flatten(start_dim=1),
-                        nproto.flatten(start_dim=1)
+                        proto_cond.flatten(start_dim=1)
                     ],
                     dim=1,
                 )
@@ -239,15 +248,15 @@ def train_diffusion_bc(cfg: DictConfig):
             epoch_loss.append(loss_cpu)
             epoch_action_loss.append(action_loss.item())
             epoch_proto_prediction_loss.append(proto_prediction_loss.item())
-
-        wandb.log({
-            "epoch loss":
-            np.mean(epoch_loss),
-            "epoch action loss":
-            np.mean(epoch_action_loss),
-            "epoch proto prediction loss":
-            np.mean(epoch_proto_prediction_loss),
-        })
+        if use_wandb:
+            wandb.log({
+                "epoch loss":
+                np.mean(epoch_loss),
+                "epoch action loss":
+                np.mean(epoch_action_loss),
+                "epoch proto prediction loss":
+                np.mean(epoch_proto_prediction_loss),
+            })
 
         if epoch_idx % cfg.ckpt_frequency == 0:
             torch.save(
@@ -281,12 +290,13 @@ def train_diffusion_bc(cfg: DictConfig):
                         )
                         total_rewards.append(total_r)
                         order_rewards.append(order_r)
-                    wandb.log({
-                        f"eval_score/{demo_type}_{task_progess_ratio}_total reward":
-                        np.mean(total_rewards),
-                        f"eval_score/{demo_type}_{task_progess_ratio}_order reward":
-                        np.mean(order_rewards),
-                    })
+                    if use_wandb:
+                        wandb.log({
+                            f"eval_score/{demo_type}_{task_progess_ratio}_total reward":
+                            np.mean(total_rewards),
+                            f"eval_score/{demo_type}_{task_progess_ratio}_order reward":
+                            np.mean(order_rewards),
+                        })
                     if demo_type == "robot":
                         break
 
