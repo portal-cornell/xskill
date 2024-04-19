@@ -308,6 +308,7 @@ class visual_diffusion_bc_prediction_callback:
         # get first observation
         max_steps = eval_cfg.max_steps
         obs = self.env.reset()
+        initial_obs = obs
         # keep a queue of last 2 steps of observations
         obs_horizon = eval_cfg.obs_horizon
         img_obs_deque = collections.deque(
@@ -433,6 +434,8 @@ class visual_diffusion_bc_prediction_callback:
                     if step_idx > max_steps:
                         done = True
         
+        final_obs = obs
+
         predict_protos = np.array(predict_protos)
         eval_save_path = os.path.join(save_path, "evaluation")
         if epoch_num is not None:
@@ -467,4 +470,4 @@ class visual_diffusion_bc_prediction_callback:
             if task == task_stack[-1]:
                 task_stack.pop()
                 order_task_completed_reward += 1
-        return len(total_task_completed), order_task_completed_reward
+        return len(total_task_completed), order_task_completed_reward, initial_obs, final_obs
