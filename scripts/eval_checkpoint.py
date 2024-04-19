@@ -14,6 +14,7 @@ from xskill.model.encoder import ResnetConv
 import random
 from tqdm import tqdm
 import json
+from xskill.utility.observation_indices import ACTION_INDICES
 
 def create_policy_nets(cfg):
     """
@@ -88,11 +89,7 @@ def get_attempted_unspecified_tasks(task_list, initial_obs, final_obs, epsilon=1
     unspecified_tasks = [task for task in ACTION_INDICES \
                             if task not in task_list \
                             and (len(task) < 5 or f"{task[5:]}" not in ACTION_INDICES)]
-    for task in task_list:
-        print(f"{task} diff: {obs_diff[ACTION_INDICES[task]]}")
-    print()
     for task in unspecified_tasks:
-        print(f"{task} diff: {obs_diff[ACTION_INDICES[task]]}")
         if np.any(obs_diff[ACTION_INDICES[task]] > epsilon):
             count += 1
 
@@ -169,7 +166,7 @@ def main(cfg: DictConfig):
                 tasks_completed = 0
                 all_correct_count = 0
                 num_unspecified_tasks = 0
-                for seed in eval_eps:
+                for seed in eval_eps[:1]:
                     cfg.eval_cfg.demo_item = seed.item()
                     num_completed, _, initial_obs, final_obs = eval_callback.eval(
                         nets,
