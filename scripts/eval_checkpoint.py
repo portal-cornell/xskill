@@ -166,7 +166,7 @@ def main(cfg: DictConfig):
                 tasks_completed = 0
                 all_correct_count = 0
                 num_unspecified_tasks = 0
-                for seed in eval_eps[:1]:
+                for seed in eval_eps:
                     cfg.eval_cfg.demo_item = seed.item()
                     num_completed, _, initial_obs, final_obs = eval_callback.eval(
                         nets,
