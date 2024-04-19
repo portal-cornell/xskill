@@ -7,9 +7,38 @@ import json
 from omegaconf import DictConfig
 import hydra
 import omegaconf
-from xskill.utility.diffusion_bc_callback import load_images, convert_images_to_tensors
+
+def load_images(folder_path, resize_shape=None):
+    images = []  # initialize an empty list to store the images
+
+    # get a sorted list of filenames in the folder
+    filenames = sorted(
+        [f for f in os.listdir(folder_path) if f.endswith(".png")],
+        key=lambda x: int(os.path.splitext(x)[0]),
+    )
+
+    # loop through all PNG files in the sorted list
+    for filename in filenames:
+        # open the image file using PIL library
+        img = Image.open(os.path.join(folder_path, filename))
+        # convert the image to a NumPy array
+        img_arr = np.array(img)
+        if resize_shape is not None:
+            img_arr = cv2.resize(img_arr, resize_shape)
+        images.append(img_arr)  # add the image array to the list
+
+    # convert the list of image arrays to a NumPy array
+    images_arr = np.array(images)
+    return images_arr
 
 
+def convert_images_to_tensors(images_arr, pipeline=None):
+    images_tensor = np.transpose(images_arr, (0, 3, 1, 2))  # (T,dim,h,w)
+    images_tensor = torch.tensor(images_tensor, dtype=torch.float32) / 255
+    if pipeline is not None:
+        images_tensor = pipeline(images_tensor)
+
+    return images_tensor
 
 def load_model(cfg):
     """
@@ -38,7 +67,7 @@ def load_model(cfg):
     print("model loaded")  
     return model
 
-def gif_of_clip(cfg, demo_type, ep_num, frame_num, slide, output_dir, cycle=False):
+def gif_of_clip(cfg, demo_type, ep_num, frame_num, slide, output_dir, cycle=False, save=True):
     """
     Computes latent representations of a video from embodiment type {demo_type}
     and episode number {ep_num} based on a provided model.
@@ -60,10 +89,12 @@ def gif_of_clip(cfg, demo_type, ep_num, frame_num, slide, output_dir, cycle=Fals
         Directory to save gif
     cycle : bool (optional)
         True => retrieved from cycle-back operation
+    save : bool (optional)
+        True => save images to output_dir
 
     Side Effects
     ------------
-    - Saves gif to specified output_dir
+    - Saves gif to specified output_dir if save True
 
     Returns 
     -------
@@ -78,9 +109,14 @@ def gif_of_clip(cfg, demo_type, ep_num, frame_num, slide, output_dir, cycle=Fals
     sub_imgs = images_arr[frame_num:frame_num + slide + 1]
 
     pil_imgs = [Image.fromarray(img) for img in sub_imgs]
-    pil_imgs[0].save(os.path.join(output_dir, f'{demo_type}_{ep_num}_index{frame_num}{"_cycle" if cycle else ""}.gif'), save_all=True, append_images=pil_imgs[1:], duration=200, loop=0)
+    if save:
+        pil_imgs[0].save(os.path.join(output_dir, f'{demo_type}_{ep_num}_index{frame_num}{"_cycle" if cycle else ""}.gif'), save_all=True, append_images=pil_imgs[1:], duration=200, loop=0)
     
     return pil_imgs
+
+def repeat_last_proto(encode_protos, eps_len):
+    rep_proto = encode_protos[-1].unsqueeze(0).repeat(eps_len - len(encode_protos), 1)
+    return torch.cat([encode_protos, rep_proto])
 
 def traj_representations(cfg, model, pipeline, demo_type, ep_num, frame_list=None):
     """
@@ -134,4 +170,5 @@ def traj_representations(cfg, model, pipeline, demo_type, ep_num, frame_list=Non
     z = model.encoder_q(im_q, None) # (T, K)
     state_rep = model.encoder_q.get_state_representation(clips, None) # (T, 2, D)
     traj_rep = model.encoder_q.get_traj_representation(state_rep) # (T, D)
+    traj_rep = repeat_last_proto(traj_rep, eps_len)
     return traj_rep, z

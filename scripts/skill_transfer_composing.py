@@ -196,10 +196,13 @@ def train_diffusion_bc(cfg: DictConfig):
                 )
             else:
                 # feed in: (B,obs_feature*obs_horizon),(B,snap_frame,D)
+                proto_cond = torch.clone(nproto).detach()
+                if cfg.unconditioned_policy:
+                    proto_cond.fill_(0)
                 obs_cond = torch.cat(
                     [
                         obs_feature.flatten(start_dim=1),
-                        nproto.flatten(start_dim=1)
+                        proto_cond.flatten(start_dim=1)
                     ],
                     dim=1,
                 )

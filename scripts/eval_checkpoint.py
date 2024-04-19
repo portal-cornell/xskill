@@ -14,7 +14,6 @@ from xskill.model.encoder import ResnetConv
 import random
 from tqdm import tqdm
 import json
-from xskill.utility.observation_indices import ACTION_INDICES, ACTION_GOALS
 
 def create_policy_nets(cfg):
     """

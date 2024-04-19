@@ -2,8 +2,13 @@ base_dev_dir: '/share/portal/pd337'
 hydra.job.config.save_dir: null
 save_dir: '${base_dev_dir}/xskill/experiment/diffusion_bc/kitchen/'
 
+# IMPORTANT SETTINGS:
+#   unconditioned_policy - will train p(a|s)
+#   paired_data - will replace some robot trajectories with human trajectories
+#   nearest_neighbor_replacement - will do l2 distance lookups into bank of human zs to generate new trajectory
+
 project_name: 'kitchen_prototype_diffusion_bc'
-use_wandb: True
+use_wandb: False
 num_epochs: 200
 lr: 1e-4
 weight_decay: 1e-6
@@ -40,6 +45,7 @@ prototype: False
 softmax_prototype: False
 one_hot_prototype: False
 upsample_proto: False
+unconditioned_policy: False
 dataset:
   _target_: xskill.dataset.diffusion_bc_dataset.KitchenBCDataset
   resize_shape: ${bc_resize}
@@ -60,8 +66,16 @@ dataset:
   unnormal_list: ['proto_snap','protos']
   seed: ${seed}
   verbose: True
-  paired_data: True
+  paired_data: False
+  paired_percent: 0.5
   paired_proto_dirs: ${pretrain_path}/human_encode_protos/ckpt_${pretrain_ckpt} 
+  paired_demo_img_path: ${base_dev_dir}/xskill/datasets/kitchen_dataset/
+  nearest_neighbor_replacement: True
+  nearest_neighbor_data_dirs: ${pretrain_path}/human_l2/ckpt_${pretrain_ckpt} 
+  replace_percent: 1
+  save_lookups: True
+  
+
 
 
 upsample_proto_net:
