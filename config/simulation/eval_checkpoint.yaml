@@ -1,24 +1,14 @@
-<<<<<<< HEAD
-base_dev_dir: '/share/portal/kk837'
-=======
 base_dev_dir: '/share/portal/pd337'
->>>>>>> 9cf35f619988f0962868b42fa4fe45b0772cc206
 hydra.job.config.save_dir: null
-save_dir: '${base_dev_dir}/xskill/experiment/diffusion_bc/kitchen/'
 
-# IMPORTANT SETTINGS:
-#   unconditioned_policy - will train p(a|s)
-#   paired_data - will replace some robot trajectories with human trajectories
-#   nearest_neighbor_replacement - will do l2 distance lookups into bank of human zs to generate new trajectory
+pretrain_path: '${base_dev_dir}/xskill/experiment/pretrain/orig_batch'
+pretrain_ckpt: 79
+
+policy_name: 'FILL_IN'
+trained_model_path: '${base_dev_dir}/xskill/experiment/diffusion_bc/kitchen/${policy_name}'
+checkpoint_list: [150, 160, 170, 180, 190]
 
 project_name: 'kitchen_prototype_diffusion_bc'
-use_wandb: False
-num_epochs: 200
-lr: 1e-4
-weight_decay: 1e-6
-ckpt_frequency: 5
-
-seed: 43
 
 pred_horizon: 16
 obs_horizon: 2
@@ -41,19 +31,13 @@ bc_resize: [112,112]
 pretrain_resize: [124,124]
 pretrain_pipeline: ["center_crop_112_112","normalize"]
 
-<<<<<<< HEAD
-pretrain_path: ${base_dev_dir}/xskill/experiment/pretrain/base_xskills
-=======
-pretrain_path: '${base_dev_dir}/xskill/experiment/pretrain/orig_batch'
->>>>>>> 9cf35f619988f0962868b42fa4fe45b0772cc206
-pretrain_ckpt: 79
+
 # dataset
 raw_representation: True
 prototype: False
 softmax_prototype: False
 one_hot_prototype: False
 upsample_proto: False
-unconditioned_policy: False
 dataset:
   _target_: xskill.dataset.diffusion_bc_dataset.KitchenBCDataset
   resize_shape: ${bc_resize}
@@ -74,17 +58,6 @@ dataset:
   unnormal_list: ['proto_snap','protos']
   seed: ${seed}
   verbose: True
-  paired_data: False
-  paired_percent: 0.5
-  paired_proto_dirs: ${pretrain_path}/human_encode_protos/ckpt_${pretrain_ckpt} 
-  paired_demo_img_path: ${base_dev_dir}/xskill/datasets/kitchen_dataset/
-  nearest_neighbor_replacement: True
-  nearest_neighbor_data_dirs: ${pretrain_path}/human_l2/ckpt_${pretrain_ckpt} 
-  replace_percent: 1
-  save_lookups: True
-  
-
-
 
 upsample_proto_net:
   _target_: xskill.model.network.Mlp
@@ -122,8 +95,8 @@ noise_scheduler:
   clip_sample: True
   prediction_type: 'epsilon'
 
-task_progess_ratio_list: [1]
-demo_type_list: ['robot','human']
+robot_speeds: [1]
+human_speeds: [1, 1.5]
 
 eval_callback:
   _target_: xskill.utility.diffusion_bc_callback.visual_diffusion_bc_prediction_callback
@@ -132,14 +105,13 @@ eval_callback:
   prototype: ${prototype}
   one_hot_prototype: ${one_hot_prototype}
   snap_frames: ${dataset.snap_frames}
-  task_progess_ratio: -1
+  task_progess_ratio: 1
   pretain_model_path: ${pretrain_path}
   pretrain_model_ckpt: ${pretrain_ckpt}
 
 
 eval_cfg:
-  n_evaluations: 2
-  eval_frequency: 20
+  n_evaluations: 19
   pretrain_path: ${pretrain_path}
   pretrain_ckpt: ${pretrain_ckpt}
   bc_resize: ${bc_resize}

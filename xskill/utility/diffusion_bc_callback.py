@@ -16,6 +16,7 @@ from xskill.dataset.diffusion_bc_dataset import (
     normalize_data,
     unnormalize_data,
 )
+from xskill.utility.eval_utils import convert_images_to_tensors, load_images
 import plotly.graph_objects as go
 from xskill.utility.transform import get_transform_pipeline
 import cv2
@@ -25,39 +26,6 @@ def repeat_last_proto(encode_protos, eps_len):
     rep_proto = encode_protos[-1].unsqueeze(0).repeat(
         eps_len - len(encode_protos), 1)
     return torch.cat([encode_protos, rep_proto])
-
-
-def load_images(folder_path, resize_shape=None):
-    images = []  # initialize an empty list to store the images
-
-    # get a sorted list of filenames in the folder
-    filenames = sorted(
-        [f for f in os.listdir(folder_path) if f.endswith(".png")],
-        key=lambda x: int(os.path.splitext(x)[0]),
-    )
-
-    # loop through all PNG files in the sorted list
-    for filename in filenames:
-        # open the image file using PIL library
-        img = Image.open(os.path.join(folder_path, filename))
-        # convert the image to a NumPy array
-        img_arr = np.array(img)
-        if resize_shape is not None:
-            img_arr = cv2.resize(img_arr, resize_shape)
-        images.append(img_arr)  # add the image array to the list
-
-    # convert the list of image arrays to a NumPy array
-    images_arr = np.array(images)
-    return images_arr
-
-
-def convert_images_to_tensors(images_arr, pipeline=None):
-    images_tensor = np.transpose(images_arr, (0, 3, 1, 2))  # (T,dim,h,w)
-    images_tensor = torch.tensor(images_tensor, dtype=torch.float32) / 255
-    if pipeline is not None:
-        images_tensor = pipeline(images_tensor)
-
-    return images_tensor
 
 
 def load_json(path):
@@ -277,7 +245,7 @@ class visual_diffusion_bc_prediction_callback:
         env = KitchenAllV0(use_abs_action=True)
         return env
 
-    def eval(self, nets, noise_scheduler, stats, eval_cfg, save_path, seed):
+    def eval(self, nets, noise_scheduler, stats, eval_cfg, save_path, seed, epoch_num=None):
         """
         pretrain resize doesn't matter here.
         use bc_resize to resize the env input to desired size
@@ -433,12 +401,14 @@ class visual_diffusion_bc_prediction_callback:
                     step_idx += 1
                     if step_idx > max_steps:
                         done = True
-
+        
         predict_protos = np.array(predict_protos)
         eval_save_path = os.path.join(save_path, "evaluation")
+        if epoch_num is not None:
+            eval_save_path = os.path.join(eval_save_path, f'ckpt_{epoch_num}')
         os.makedirs(eval_save_path, exist_ok=True)
         # save eval gif
-        video_save_path = osp.join(eval_save_path, f"eval_{seed}.gif")
+        video_save_path = osp.join(eval_save_path, f"{eval_cfg.demo_type}_eval_{seed}.gif")
         imageio.mimsave(video_save_path, imgs)
         #
         fig = go.Figure()
@@ -459,6 +429,7 @@ class visual_diffusion_bc_prediction_callback:
 
         total_task_completed = set(info["completed_tasks"]).intersection(
             set(["kettle", "light switch", "microwave", "slide cabinet"]))
+        print(f'Total Tasks Completed: {total_task_completed}')
         order_task_completed_reward = 0
         while not complete_queue.empty() and task_stack:
             task = complete_queue.get()

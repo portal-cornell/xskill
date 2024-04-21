@@ -12,3 +12,5 @@ ckpt: 79
 device: 'cuda:0'
 plot_top_k: null
 verbose: True
+
+batch_size: 28
