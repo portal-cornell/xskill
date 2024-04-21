@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 base_dev_dir: '/share/portal/kk837'
-=======
-base_dev_dir: '/share/portal/pd337'
->>>>>>> 9cf35f619988f0962868b42fa4fe45b0772cc206
 hydra.job.config.save_dir: null
 save_dir: '${base_dev_dir}/xskill/experiment/diffusion_bc/kitchen/'
 
@@ -41,12 +37,9 @@ bc_resize: [112,112]
 pretrain_resize: [124,124]
 pretrain_pipeline: ["center_crop_112_112","normalize"]
 
-<<<<<<< HEAD
-pretrain_path: ${base_dev_dir}/xskill/experiment/pretrain/base_xskills
-=======
-pretrain_path: '${base_dev_dir}/xskill/experiment/pretrain/orig_batch'
->>>>>>> 9cf35f619988f0962868b42fa4fe45b0772cc206
+pretrain_path: ${base_dev_dir}/xskill/experiment/pretrain/none_simultaneous
 pretrain_ckpt: 79
+human_dataset: none_simultaneous
 # dataset
 raw_representation: True
 prototype: False
@@ -76,9 +69,9 @@ dataset:
   verbose: True
   paired_data: False
   paired_percent: 0.5
-  paired_proto_dirs: ${pretrain_path}/human_encode_protos/ckpt_${pretrain_ckpt} 
+  paired_proto_dirs: ${pretrain_path}/${human_dataset}_encode_protos/ckpt_${pretrain_ckpt} 
   paired_demo_img_path: ${base_dev_dir}/xskill/datasets/kitchen_dataset/
-  nearest_neighbor_replacement: True
+  nearest_neighbor_replacement: False
   nearest_neighbor_data_dirs: ${pretrain_path}/human_l2/ckpt_${pretrain_ckpt} 
   replace_percent: 1
   save_lookups: True
@@ -148,7 +141,7 @@ eval_cfg:
   eval_mask_path: ${base_dev_dir}/xskill/datasets/kitchen_dataset/eval_mask.json
   demo_path: ${base_dev_dir}/xskill/datasets/kitchen_dataset/
   demo_item: 247
-  demo_type: 'human'
+  demo_type: ${human_dataset}
 
   max_steps: 275
   obs_horizon: ${obs_horizon}
