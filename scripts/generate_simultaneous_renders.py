@@ -10,6 +10,7 @@ from collections import defaultdict
 from actions import *
 base_dev_dir = "/share/portal/kk837"
 from xskill.utility.utils import read_json
+import json
 
 ACTION_INDICES = {
     "bottom burner": np.array([11, 12]),
@@ -240,7 +241,6 @@ def create_pos(
 )
 def generate_render(cfg:DictConfig):
     task_completions_list = read_json(f"{base_dev_dir}/xskill/datasets/kitchen_dataset/task_completions.json")
-    # breakpoint()
     for eps_idx, task_list in enumerate(task_completions_list):
         actions = []
         for task in task_list:
@@ -265,7 +265,10 @@ def generate_render(cfg:DictConfig):
         env.reset()
         frames = []
 
-        reset_pos = create_pos(actions, [1, 1, 3, 3])
+        if len(actions) == 3:
+            reset_pos = create_pos(actions, [1, 1, 3])
+        else:
+            reset_pos = create_pos(actions, [1, 1, 3, 3])
 
         for i in range(len(reset_pos)):
             env.robot.reset(env, reset_pos[i], env.init_qvel[:].copy())
@@ -275,6 +278,10 @@ def generate_render(cfg:DictConfig):
             os.makedirs(os.path.join(video_path, f'{eps_idx}'), exist_ok=True)
             image_observations.save(video_filepath)
         env.close()
+
+        eps_path = os.path.join(video_path, f'{eps_idx}')
+        with open(os.path.join(eps_path, "states.json"), "w") as f:
+            json.dump(reset_pos.tolist(), f)
         # break
 
 if __name__ == "__main__":

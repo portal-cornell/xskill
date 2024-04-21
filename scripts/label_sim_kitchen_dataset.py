@@ -141,7 +141,7 @@ def label_dataset(cfg: DictConfig):
     )
     pipeline = nn.Sequential(Tr.CenterCrop((112, 112)), normalize)
 
-    for demo_type in ["human", "robot"]:
+    for demo_type in [ "robot", cfg.human_dataset]:
         data_path = os.path.join(cfg.data_path, demo_type)
         all_folders = os.listdir(data_path)
         all_folders = sorted(all_folders, key=lambda x: int(x))
@@ -149,9 +149,9 @@ def label_dataset(cfg: DictConfig):
             all_folders = all_folders[: cfg.plot_top_k]
         for folder_path in tqdm(all_folders, disable=not cfg.verbose):
             # store the proto in proto pretrain folder
-            if demo_type == "human":
+            if demo_type == cfg.human_dataset:
                 save_folder = os.path.join(
-                    cfg.exp_path, "human_encode_protos", f"ckpt_{cfg.ckpt}", folder_path
+                    cfg.exp_path, f"{cfg.human_dataset}_encode_protos", f"ckpt_{cfg.ckpt}", folder_path
                 )
             else:
                 save_folder = os.path.join(

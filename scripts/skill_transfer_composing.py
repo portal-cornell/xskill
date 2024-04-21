@@ -12,6 +12,7 @@ from omegaconf import DictConfig, OmegaConf
 from xskill.model.diffusion_model import get_resnet, replace_bn_with_gn
 from xskill.model.encoder import ResnetConv
 import random
+from tqdm import tqdm
 
 
 @hydra.main(
@@ -138,9 +139,10 @@ def train_diffusion_bc(cfg: DictConfig):
     )
 
     # create eval callbacl
+    # import pdb; pdb; set.trace()
     eval_callback = hydra.utils.instantiate(cfg.eval_callback)
 
-    for epoch_idx in range(cfg.num_epochs):
+    for epoch_idx in tqdm(range(cfg.num_epochs)):
         epoch_loss = list()
         epoch_action_loss = list()
         epoch_proto_prediction_loss = list()

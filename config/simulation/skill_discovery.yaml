@@ -1,11 +1,11 @@
 base_dev_dir: '/share/portal/kk837'
 hydra:
   run:
-    dir: '${base_dev_dir}/xskill/experiment/pretrain/${now:%Y-%m-%d_%H-%M-%S}'
+    dir: '${base_dev_dir}/xskill/experiment/pretrain/none_single'
 
 seed: 45
 batch_size: 28
-num_workers: 12
+num_workers: 4
 pin_memory: False
 persistent_workers: True
 drop_last: True
@@ -30,7 +30,7 @@ robot_dataset:
 human_dataset:
   _target_: xskill.dataset.dataset.EpisodeTrajDataset
   _allowed_dirs: [
-    '${base_dev_dir}/xskill/datasets/kitchen_dataset/human',
+    '${base_dev_dir}/xskill/datasets/kitchen_dataset/none_single',
   ]
   vid_mask: ${robot_dataset.vid_mask}
   frame_sampler:
@@ -52,7 +52,7 @@ Trainer:
   devices: [0]
   max_epochs: 81
   enable_progress_bar: False
-  log_every_n_steps: 100
+  log_every_n_steps: 10
 
 n_layer: 8
 

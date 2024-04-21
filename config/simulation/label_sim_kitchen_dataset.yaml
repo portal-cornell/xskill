@@ -1,4 +1,4 @@
-base_dev_dir: '/home/portal'
+base_dev_dir: '/share/portal/kk837'
 
 hydra:
   run:
@@ -6,7 +6,8 @@ hydra:
 
 resize_shape: [124,124]
 data_path: ${base_dev_dir}/xskill/datasets/kitchen_dataset
-exp_path: null
+exp_path: ${base_dev_dir}/xskill/experiment/pretrain/none_simultaneous
+human_dataset: 'none_simultaneous'
 ckpt: 79
 device: 'cuda:0'
 plot_top_k: null

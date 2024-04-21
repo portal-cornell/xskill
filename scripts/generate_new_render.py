@@ -10,6 +10,7 @@ from collections import defaultdict
 from actions import *
 base_dev_dir = "/share/portal/kk837"
 from xskill.utility.utils import read_json
+import json
 
 ACTION_INDICES = {
     "bottom burner": np.array([11, 12]),
@@ -274,6 +275,11 @@ def generate_render(cfg:DictConfig):
             video_filepath = os.path.join(video_path, f'{eps_idx}/{i}.png')
             os.makedirs(os.path.join(video_path, f'{eps_idx}'), exist_ok=True)
             image_observations.save(video_filepath)
+        
+        eps_path = os.path.join(video_path, f'{eps_idx}')
+        with open(os.path.join(eps_path, "states.json"), "w") as f:
+            json.dump(reset_pos.tolist(), f)
+
         env.close()
         # break
 
