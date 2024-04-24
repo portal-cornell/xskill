@@ -245,7 +245,7 @@ class visual_diffusion_bc_prediction_callback:
         env = KitchenAllV0(use_abs_action=True)
         return env
 
-    def eval(self, nets, noise_scheduler, stats, eval_cfg, save_path, seed, epoch_num=None):
+    def eval(self, nets, noise_scheduler, stats, eval_cfg, save_path, seed, epoch_num=None, task_list=["slide cabinet", "light switch", "kettle", "microwave"]):
         """
         pretrain resize doesn't matter here.
         use bc_resize to resize the env input to desired size
@@ -276,6 +276,7 @@ class visual_diffusion_bc_prediction_callback:
         # get first observation
         max_steps = eval_cfg.max_steps
         obs = self.env.reset()
+        initial_obs = obs
         # keep a queue of last 2 steps of observations
         obs_horizon = eval_cfg.obs_horizon
         img_obs_deque = collections.deque(
@@ -295,8 +296,7 @@ class visual_diffusion_bc_prediction_callback:
         B = 1
 
         # track completion order
-        task_stack = deque(
-            ["slide cabinet", "light switch", "kettle", "microwave"])
+        task_stack = deque(task_list)
         complete_queue = queue.Queue()
         predict_protos = []
         while not done:
@@ -402,6 +402,8 @@ class visual_diffusion_bc_prediction_callback:
                     if step_idx > max_steps:
                         done = True
         
+        final_obs = obs
+
         predict_protos = np.array(predict_protos)
         eval_save_path = os.path.join(save_path, "evaluation")
         if epoch_num is not None:
@@ -436,4 +438,4 @@ class visual_diffusion_bc_prediction_callback:
             if task == task_stack[-1]:
                 task_stack.pop()
                 order_task_completed_reward += 1
-        return len(total_task_completed), order_task_completed_reward
+        return len(total_task_completed), order_task_completed_reward, initial_obs, final_obs
