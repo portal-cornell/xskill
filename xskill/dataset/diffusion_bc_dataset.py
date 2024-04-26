@@ -372,15 +372,16 @@ class KitchenBCDataset(torch.utils.data.Dataset):
                 snap = np.array(z_tilde, dtype=np.float32)
                 snap = snap.flatten()
                 # TODO: fix the number of times its tiled
-                snap = np.tile(snap, (len(proto_data), 1))  # (T,snap_frams*model_dim)
+                snap = np.tile(snap, (len(cur_proto_data), 1))  # (T,snap_frams*model_dim)
                 return proto_data, snap
             
-            eps_len = len(cur_proto_data)
-            snap_idx = random.sample(list(range(eps_len)), k=self.snap_frames)
+            human_eps_len = len(cur_proto_data)
+            robot_eps_len = len(proto_data)
+            snap_idx = random.sample(list(range(human_eps_len)), k=self.snap_frames)
             snap_idx.sort()
             snap = cur_proto_data[snap_idx]
             snap = snap.flatten()
-            snap = np.tile(snap, (eps_len, 1))  # (T,snap_frams*model_dim)
+            snap = np.tile(snap, (robot_eps_len, 1))  # (T,snap_frams*model_dim)
             return proto_data, snap
 
         return proto_data
