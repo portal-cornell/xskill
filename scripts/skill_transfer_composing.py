@@ -23,7 +23,8 @@ from tqdm import tqdm
 def train_diffusion_bc(cfg: DictConfig):
     # create save dir
     use_wandb = cfg.use_wandb
-    unique_id = str(uuid.uuid4())
+    # unique_id = str(uuid.uuid4())
+    unique_id = cfg.policy_name if cfg.policy_name != 'FILL_IN' else str(uuid.uuid4())
     save_dir = os.path.join(cfg.save_dir, unique_id)
     cfg.save_dir = save_dir
     os.makedirs(save_dir, exist_ok=True)

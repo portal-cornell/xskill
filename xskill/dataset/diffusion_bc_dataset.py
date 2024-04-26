@@ -372,7 +372,7 @@ class KitchenBCDataset(torch.utils.data.Dataset):
                 snap = np.array(z_tilde, dtype=np.float32)
                 snap = snap.flatten()
                 # TODO: fix the number of times its tiled
-                snap = np.tile(snap, (len(cur_proto_data), 1))  # (T,snap_frams*model_dim)
+                snap = np.tile(snap, (len(proto_data), 1))  # (T,snap_frams*model_dim)
                 return proto_data, snap
             
             eps_len = len(cur_proto_data)
