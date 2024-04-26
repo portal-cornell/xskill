@@ -97,7 +97,7 @@ def main(cfg: DictConfig):
     )
     pipeline = nn.Sequential(Tr.CenterCrop((112, 112)), normalize)
 
-    data_path = os.path.join(cfg.data_path, 'human')
+    data_path = os.path.join(cfg.data_path, cfg.human_type)
     all_folders = os.listdir(data_path)
     all_folders = sorted(all_folders, key=lambda x: int(x))
     # np.random.shuffle(all_folders)
@@ -107,37 +107,37 @@ def main(cfg: DictConfig):
     all_human_zs = []
     index_to_object = []
 
-    for folder_path in tqdm(all_folders[:1], disable=not cfg.verbose):
+    vid_to_idx_range = {}
+    lower = 0
+    for folder_path in tqdm(all_folders, disable=not cfg.verbose):
         data_folder = os.path.join(data_path, folder_path)
 
-        state_arr = load_state_and_to_tensor(data_folder)
-        moved_obj = detect_moving_objects_array(state_arr, OBS_ELEMENT_INDICES)
-        moved_obj = np.array(moved_obj, dtype=np.int32)
-        moved_obj = moved_obj.tolist()
-        index_to_object.extend(moved_obj)
+        # state_arr = load_state_and_to_tensor(data_folder)
+        # moved_obj = detect_moving_objects_array(state_arr, OBS_ELEMENT_INDICES)
+        # moved_obj = np.array(moved_obj, dtype=np.int32)
+        # moved_obj = moved_obj.tolist()
+        # index_to_object.extend(moved_obj)
 
-        traj_representation, _ = traj_representations(cfg, model, pipeline, 'human', int(folder_path))
+        traj_representation, _ = traj_representations(cfg, model, pipeline, cfg.human_type, int(folder_path))
         traj_representation = traj_representation.detach().cpu().numpy()
         traj_representation = np.array(traj_representation).tolist()
 
         all_human_zs.extend(traj_representation)
         num_zs.append(len(traj_representation))
-
-    num_zs = torch.Tensor(num_zs)
-    num_zs = torch.cumsum(num_zs, dim=0).tolist()
+        
+        upper = lower + len(traj_representation)
+        vid_to_idx_range[int(folder_path)] = [lower, upper]
+        lower = upper
     
     save_folder = os.path.join(
-        cfg.exp_path, "human_l2", f"ckpt_{cfg.ckpt}"
+        cfg.exp_path, f"{cfg.human_type}_l2", f"ckpt_{cfg.ckpt}"
     )
     os.makedirs(save_folder, exist_ok=True)
-    with open(os.path.join(cfg.exp_path, "human_l2", f"ckpt_{cfg.ckpt}", "human_z_moved_obj.json"), "w") as f:
+    with open(os.path.join(cfg.exp_path, f"{cfg.human_type}_l2", f"ckpt_{cfg.ckpt}", f"{cfg.human_type}_z_moved_obj.json"), "w") as f:
         json.dump(index_to_object, f)
-    
-    with open(os.path.join(cfg.exp_path, "human_l2", f"ckpt_{cfg.ckpt}", "episode_list.json"), "w") as f:
-        json.dump([int(folder) for folder in all_folders], f)
 
-    with open(os.path.join(cfg.exp_path, "human_l2", f"ckpt_{cfg.ckpt}", "num_zs.json"), "w") as f:
-        json.dump(num_zs, f)
+    with open(os.path.join(cfg.exp_path, f"{cfg.human_type}_l2", f"ckpt_{cfg.ckpt}", "vid_to_idx_range.json"), "w") as f:
+        json.dump(vid_to_idx_range, f)
     
     all_human_zs = torch.Tensor(all_human_zs).cuda()
 
@@ -146,7 +146,7 @@ def main(cfg: DictConfig):
     all_folders = sorted(all_folders, key=lambda x: int(x))
     for folder_path in tqdm(all_folders, disable=not cfg.verbose):
         save_folder = os.path.join(
-            cfg.exp_path, "human_l2", f"ckpt_{cfg.ckpt}", folder_path
+            cfg.exp_path, f"{cfg.human_type}_l2", f"ckpt_{cfg.ckpt}", folder_path
         )
         os.makedirs(save_folder, exist_ok=True)
 

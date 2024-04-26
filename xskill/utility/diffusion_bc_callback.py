@@ -225,19 +225,19 @@ class visual_diffusion_bc_prediction_callback:
 
     def load_video(self, eval_cfg):
         # load demo video
-        if eval_cfg.demo_type == "human":
-            # /local/crv/mengda/air/datasets/kitchen_dataset_v2/human
-            demo_videos = load_images(
-                os.path.join(eval_cfg.demo_path, "human",
-                             f"{eval_cfg.demo_item}"),
-                resize_shape=eval_cfg.resize_shape,
-            )
-        else:
-            demo_videos = load_images(
-                os.path.join(eval_cfg.demo_path, "robot",
-                             f"{eval_cfg.demo_item}"),
-                resize_shape=eval_cfg.resize_shape,
-            )
+        # if eval_cfg.demo_type == "human":
+        #     # /local/crv/mengda/air/datasets/kitchen_dataset_v2/human
+        #     demo_videos = load_images(
+        #         os.path.join(eval_cfg.demo_path, "human",
+        #                      f"{eval_cfg.demo_item}"),
+        #         resize_shape=eval_cfg.resize_shape,
+        #     )
+        # else:
+        demo_videos = load_images(
+            os.path.join(eval_cfg.demo_path, eval_cfg.demo_type,
+                            f"{eval_cfg.demo_item}"),
+            resize_shape=eval_cfg.resize_shape,
+        )
 
         return demo_videos
 

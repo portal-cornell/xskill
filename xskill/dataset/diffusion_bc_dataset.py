@@ -128,6 +128,7 @@ class KitchenBCDataset(torch.utils.data.Dataset):
         pipeline=None,
         verbose=False,
         seed=0,
+        human_type='human',
         paired_data=False,
         paired_percent=0,
         paired_proto_dirs=None,
@@ -159,6 +160,7 @@ class KitchenBCDataset(torch.utils.data.Dataset):
         self.snap_frames = snap_frames
         self.pipeline = pipeline
         self.unnormal_list = unnormal_list
+        self.human_type = human_type
         self.paired_data = paired_data
         self.paired_percent = paired_percent
         self.paired_proto_dirs = paired_proto_dirs
@@ -259,10 +261,9 @@ class KitchenBCDataset(torch.utils.data.Dataset):
         state_data = np.array(state_data, dtype=np.float32)
         return state_data
 
-    def find_episode_and_frame(self, human_z_idx, episode_list, number_list):
+    def find_episode_and_frame(self, human_z_idx, idx_dict):
         """
-        Given a list of human z indices from the data bank, the list of episodes 
-        associated with the data bank, and the index numbers associated with each episode,
+        Given a list of human z indices from the data bank and a dictionary that maps episode numbers to human z indices,
         extracts the true episode number and the frame from within that episode.
 
 
@@ -270,47 +271,31 @@ class KitchenBCDataset(torch.utils.data.Dataset):
         ----------
         human_z_idx : numpy.ndarray
             List of indices (ranging between 0 and the total number of z's in the bank)
-        episode_list : int list
-            List of episode numbers that were used to generate the bank
-        number_list : int list
-            List of numbers indicating indices of z's corresponding to episodes.
+        idx_dict : dictionary
+            Key: episode num, Value: 2-element list with lower (inclusive) and upper (exclusive) index bound
 
-        Ex) human_z_idx = [5, 550]
-            episode_list = [150, 250]
-            number_list = [250, 500] 
-            (human z indices 0-249 come from episode 150, indices 250-499 come from episode 250)
+        Ex) human_z_idx = [5, 260]
+            idx_dict = {0: [0, 250], 250: [250, 500]}
+            (human z indices 0-249 come from episode 0, indices 250-499 come from episode 250)
         
 
         Returns 
         -------
-        episode_number : numpy.ndarray
+        episode_numbers : numpy.ndarray
             episode_number[i] = episode number for which human_z_idx[i] comes from
-        frame : numpy.ndarray
+        frames : numpy.ndarray
             frame[i] = frame number within episode_number[i]
         """
-        episode_array = np.array(episode_list)
+        episode_numbers = []
+        frames = []
+        for idx in human_z_idx:
+            for ep_num, (lower, upper) in idx_dict.items():
+                if lower <= idx < upper:
+                    episode_numbers.append(ep_num)
+                    frames.append(idx-lower)
+                    break
 
-        lower_list = number_list[:]
-        lower_list.append(0)
-        lower_array = np.roll(lower_list, 1, axis=0)
-
-        upper_list = number_list[:]
-        upper_list.append(float('inf'))
-        upper_array = np.array(upper_list)
-
-        # Create a boolean mask for each episode range
-        mask = (human_z_idx[:, np.newaxis] >= lower_array) & (human_z_idx[:, np.newaxis] < upper_array)
-        
-        # Find the index of the first True value in each row
-        frame_within_episode = np.argmax(mask, axis=1)
-        
-        # Use the index to get the corresponding episode number
-        episode_number = episode_array[frame_within_episode]
-        
-        # Calculate the frame within each episode
-        frame = human_z_idx - lower_array[frame_within_episode]
-        
-        return episode_number.astype(np.int32), frame.astype(np.int32)
+        return np.array(episode_numbers).astype(np.int32), np.array(frames).astype(np.int32)
 
     def load_proto_and_to_tensor(self, vid, is_paired=False, is_lookup=False):
         proto_path = osp.join(self.proto_dirs, os.path.basename(os.path.normpath(vid)))
@@ -356,15 +341,11 @@ class KitchenBCDataset(torch.utils.data.Dataset):
 
                 l2_dist_data = l2_dist_data[snap_idx]
                 human_z_idx = np.argmin(l2_dist_data, axis=1)
-
-                with open(os.path.join(self.nearest_neighbor_data_dirs, 'episode_list.json'), 'r') as f:
-                    episode_list = json.load(f)
-
-                with open(os.path.join(self.nearest_neighbor_data_dirs, 'num_zs.json'), 'r') as f:
-                    num_zs = json.load(f)
+                with open(os.path.join(self.nearest_neighbor_data_dirs, 'vid_to_idx_range.json'), 'r') as f:
+                    idx_dict = json.load(f)
 
                 z_tilde = []
-                episode_nums, frame_nums = self.find_episode_and_frame(human_z_idx, episode_list, num_zs)
+                episode_nums, frame_nums = self.find_episode_and_frame(human_z_idx, idx_dict)
                 cfg = DictConfig({'data_path': self.paired_demo_img_path, 'resize_shape': [124,124]})
                 reconstructed_video = []
                 orig_video = []
@@ -379,7 +360,7 @@ class KitchenBCDataset(torch.utils.data.Dataset):
                     z_tilde.append(human_proto_data[int(frame_num)])
                     
                     if self.save_lookups and k % 9 == 0:
-                        human_imgs = gif_of_clip(cfg, 'human', ep_num, frame_num, 8, None, save=False)
+                        human_imgs = gif_of_clip(cfg, self.human_type, ep_num, frame_num, 8, None, save=False)
                         robot_imgs = gif_of_clip(cfg, 'robot', robot_vid_num, snap_idx[k], 8, None, save=False)
                         reconstructed_video.extend(human_imgs)
                         orig_video.extend(robot_imgs)

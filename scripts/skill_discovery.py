@@ -3,7 +3,7 @@ import pytorch_lightning as pl
 import torch
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig, OmegaConf
-from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.callbacks import ModelCheckpoint, TQDMProgressBar
 import wandb
 from xskill.dataset.dataset import ConcatDataset
 from xskill.utility.transform import get_transform_pipeline
@@ -56,7 +56,7 @@ def pretrain(cfg: DictConfig):
     wandb.config.update(OmegaConf.to_container(cfg))
     trainer = pl.Trainer(
         # logger=wandb_logger,
-        callbacks=[checkpoint_callback],
+        callbacks=[TQDMProgressBar(refresh_rate=1), checkpoint_callback],
         enable_checkpointing=True,
         default_root_dir=output_dir,
         deterministic=True,

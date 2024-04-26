@@ -31,7 +31,7 @@ robot_dataset:
 human_dataset:
   _target_: xskill.dataset.dataset.EpisodeTrajDataset
   _allowed_dirs: [
-    '${base_dev_dir}/xskill/datasets/kitchen_dataset/human',
+    '${base_dev_dir}/xskill/datasets/kitchen_dataset/none_simultaneous',
   ]
   vid_mask: ${robot_dataset.vid_mask}
   frame_sampler:
@@ -52,7 +52,7 @@ Trainer:
   accelerator: "gpu"
   devices: [0]
   max_epochs: 81
-  enable_progress_bar: False
+  enable_progress_bar: True
   log_every_n_steps: 10
 
 n_layer: 8
@@ -129,7 +129,7 @@ Model:
 
 
 callback:
-  every_n_epoch: 10
+  every_n_epoch: 5
 
 
 

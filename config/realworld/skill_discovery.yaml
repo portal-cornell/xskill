@@ -1,4 +1,4 @@
-base_dev_dir: null
+base_dev_dir: '/share/portal/pd337'
 
 hydra:
   run:
@@ -62,7 +62,7 @@ Trainer:
   accelerator: "gpu"
   devices: [0]
   max_epochs: 300
-  enable_progress_bar: False
+  enable_progress_bar: True
   log_every_n_steps: 100
 
 n_layer: 8

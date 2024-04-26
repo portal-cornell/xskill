@@ -23,7 +23,7 @@ class RealWorldEpisodeTrajDataset(torch.utils.data.Dataset):
         seed=None,
         camera_name='camera_2',
         max_get_threads=4,
-        read_top_n=None,
+        read_top_n=1,
         resize_shape=[320, 240],
     ) -> None:
         super().__init__()

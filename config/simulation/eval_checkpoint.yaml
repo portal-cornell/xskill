@@ -1,12 +1,12 @@
 base_dev_dir: '/share/portal/pd337'
 hydra.job.config.save_dir: null
 
-pretrain_path: '${base_dev_dir}/xskill/experiment/pretrain/orig_batch'
+pretrain_path: '${base_dev_dir}/xskill/experiment/pretrain/none_simultaneous_new'
 pretrain_ckpt: 79
 
 policy_name: 'FILL_IN'
 trained_model_path: '${base_dev_dir}/xskill/experiment/diffusion_bc/kitchen/${policy_name}'
-checkpoint_list: [150, 160, 170, 180, 190]
+checkpoint_list: [180, 190]
 
 project_name: 'kitchen_prototype_diffusion_bc'
 
@@ -120,7 +120,7 @@ eval_cfg:
   eval_mask_path: ${base_dev_dir}/xskill/datasets/kitchen_dataset/eval_mask.json
   demo_path: ${base_dev_dir}/xskill/datasets/kitchen_dataset/
   demo_item: 247
-  demo_type: 'human'
+  demo_type: 'none_simultaneous'
 
   max_steps: 275
   obs_horizon: ${obs_horizon}

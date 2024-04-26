@@ -8,7 +8,7 @@ from xskill.env.kitchen.v0 import KitchenAllV0
 import numpy as np
 from collections import defaultdict
 from actions import *
-base_dev_dir = "/share/portal/kk837"
+base_dev_dir = "/share/portal/pd337"
 from xskill.utility.utils import read_json
 
 ACTION_INDICES = {

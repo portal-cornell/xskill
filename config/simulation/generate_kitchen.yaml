@@ -1,7 +1,7 @@
 hydra:
   output_subdir: null
   
-base_dev_dir: '/share/portal/kk837'
+base_dev_dir: '/share/portal/pd337'
 
 dataset_dir: '${base_dev_dir}/xskill/datasets/kitchen/small_kitchen'
 start_eps: 0

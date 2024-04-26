@@ -126,17 +126,18 @@ def main(cfg: DictConfig):
 
     result_dict = {
         'robot':{f'{ckpt_num}': {} for ckpt_num in cfg.checkpoint_list},
-        'human':{f'{ckpt_num}': {} for ckpt_num in cfg.checkpoint_list}
+        cfg.eval_cfg.demo_type:{f'{ckpt_num}': {} for ckpt_num in cfg.checkpoint_list}
     }
 
+    human_type = cfg.eval_cfg.demo_type
     speeds = {
         'robot': cfg.robot_speeds,
-        'human': cfg.human_speeds
+        human_type: cfg.human_speeds
     }
     
     for i, ckpt_num in enumerate(cfg.checkpoint_list):
         nets.load_state_dict(torch.load(os.path.join(cfg.trained_model_path, f'ckpt_{ckpt_num}.pt')))
-        for demo_type in ['robot', 'human']:
+        for demo_type in [human_type, 'robot']:
             cfg.eval_cfg.demo_type = demo_type
             for speed in speeds[demo_type]:
                 eval_callback.task_progess_ratio = speed
@@ -158,10 +159,11 @@ def main(cfg: DictConfig):
                 print(result_dict)
     
     with open(os.path.join(save_dir, "policy_results.json"), "w") as outfile:
+        # result_dict = json.load(outfile)
         json.dump(result_dict, outfile)
 
-    averages = {"robot": {f'{speed}': 0 for speed in speeds['robot']}, "human": {f'{speed}': 0 for speed in speeds['human']}}
-    counts = {"robot": {f'{speed}': 0 for speed in speeds['robot']}, "human": {f'{speed}': 0 for speed in speeds['human']}}
+    averages = {"robot": {f'{speed}': 0 for speed in speeds['robot']}, human_type: {f'{speed}': 0 for speed in speeds[human_type]}}
+    counts = {"robot": {f'{speed}': 0 for speed in speeds['robot']}, human_type: {f'{speed}': 0 for speed in speeds[human_type]}}
 
     for demo_type, values in result_dict.items():
         for ckpt_num, acc_dicts in values.items():
