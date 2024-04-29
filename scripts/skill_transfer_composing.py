@@ -24,7 +24,7 @@ def train_diffusion_bc(cfg: DictConfig):
     # create save dir
     use_wandb = cfg.use_wandb
     # unique_id = str(uuid.uuid4())
-    unique_id = cfg.policy_name if cfg.policy_name != 'FILL_IN' else str(uuid.uuid4())
+    unique_id = cfg.policy_name if cfg.policy_name != 'FILL' else str(uuid.uuid4())
     save_dir = os.path.join(cfg.save_dir, unique_id)
     cfg.save_dir = save_dir
     os.makedirs(save_dir, exist_ok=True)
@@ -281,7 +281,7 @@ def train_diffusion_bc(cfg: DictConfig):
                     else:
                         n_evaluations = cfg.eval_cfg.n_evaluations
                     for seed in range(n_evaluations):
-                        total_r, order_r = eval_callback.eval(
+                        total_r, order_r, _, _ = eval_callback.eval(
                             ema.averaged_model,
                             noise_scheduler,
                             stats,

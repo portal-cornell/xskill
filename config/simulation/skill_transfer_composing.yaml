@@ -69,14 +69,14 @@ dataset:
   seed: ${seed}
   verbose: True
   human_type: ${human_type}
-  paired_data: True
+  paired_data: False
   paired_percent: 1
   paired_proto_dirs: ${pretrain_path}/${human_type}_encode_protos/ckpt_${pretrain_ckpt} 
   paired_demo_img_path: ${base_dev_dir}/xskill/datasets/kitchen_dataset/
-  nearest_neighbor_replacement: False
+  nearest_neighbor_replacement: True
   nearest_neighbor_data_dirs: ${pretrain_path}/${human_type}_l2/ckpt_${pretrain_ckpt} 
-  replace_percent: 1
-  save_lookups: True
+  replace_percent: 0.5
+  save_lookups: False
   
 
 
