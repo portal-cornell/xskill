@@ -34,8 +34,8 @@ class Model(pl.LightningModule):
         positive_window=1,
         negative_window=10,
         pretrain_pipeline=None,
+        paired_dataset=None
     ):
-
         super(Model, self).__init__()
 
 
@@ -70,9 +70,12 @@ class Model(pl.LightningModule):
 
 
         self.pretrain_pipeline = pretrain_pipeline
+        self.paired_dataset = paired_dataset
+        self.paired_data_cur_idx = 0
+        self.paired_optimizer = torch.optim.Adam(self.encoder_q.parameters(), lr=self.lr)
 
     # @profile
-    def forward(self, im_q, bbox_q, im_k=None, bbox_k=None):
+    def forward(self, im_q, bbox_q, im_k=None, bbox_k=None, no_proj=False):
         """
         Input:
             im_q: a batch of query images
@@ -81,8 +84,8 @@ class Model(pl.LightningModule):
             logits, targets
         """
         # vision backbone -> projection [normalized] -> prototype
-        zc_q = self.encoder_q(im_q[:, self.stack_frames - 1:], None)  # z: NxC
-        zc_k = self.encoder_q(im_k[:, self.stack_frames - 1:], None)  # z: NxC
+        zc_q = self.encoder_q(im_q[:, self.stack_frames - 1:], None, no_proj=no_proj)  # z: NxC
+        zc_k = self.encoder_q(im_k[:, self.stack_frames - 1:], None, no_proj=no_proj)  # z: NxC
 
         return zc_q, zc_k
 
@@ -141,8 +144,60 @@ class Model(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         robot_batch, human_batch = batch
+        if self.paired_dataset is not None:
+            self.paired_training_step()
         self.training_step_helper(robot_batch, batch_idx)
         self.training_step_helper(human_batch, batch_idx)
+        # TODO: Add training step helper for paired data
+
+    def paired_training_step(self):
+        print(f'here: {self.paired_data_cur_idx}')
+
+        emb1, emb2 = self.paired_dataset[self.paired_data_cur_idx]
+        emb1 = emb1.unsqueeze(0)
+        emb2 = emb2.unsqueeze(0)
+        for i in range(1, 2):
+            next1, next2 = self.paired_dataset[self.paired_data_cur_idx+i]
+            emb1 = torch.cat((emb1, next1.unsqueeze(0)), dim=0)
+            emb2 = torch.cat((emb2, next1.unsqueeze(0)), dim=0)
+
+        # emb1/emb2 (B, 100, 3, h, w), each batch element is a corresponding pair
+        robot_batch = emb1
+        human_batch = emb2
+
+        batch_size = robot_batch.shape[0]
+        robot_batch_clips = []
+        human_batch_clips = []
+        for i in range(batch_size):
+            im = robot_batch[i]
+            im_r = torch.stack([
+                self.pretrain_pipeline(im[j:j + self.slide + 1])
+                for j in range(len(im) - self.slide)
+            ])  # (b,slide+1,c,h,w)
+            robot_batch_clips.append(im_r)
+
+            im = human_batch[i]
+            im_h = torch.stack([
+                self.pretrain_pipeline(im[j:j + self.slide + 1])
+                for j in range(len(im) - self.slide)
+            ])  # (b,slide+1,c,h,w)
+            human_batch_clips.append(im_h)
+            
+        robot_batch_clips = torch.cat(robot_batch_clips, dim=0)
+        human_batch_clips = torch.cat(human_batch_clips, dim=0)
+
+        zc_r, zc_h = self.forward(im_q=robot_batch_clips.to('cuda'),
+                                  bbox_q=None,
+                                  im_k=human_batch_clips.to('cuda'),
+                                  bbox_k=None,
+                                  no_proj=True)
+        breakpoint()
+        # TODO: Write the loss and optimize, put lower LR?
+                
+
+        self.paired_data_cur_idx += 2
+        self.paired_data_cur_idx %= len(self.paired_dataset)
+        
 
     # @profile
     def training_step_helper(self, batch, batch_idx):

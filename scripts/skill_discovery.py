@@ -23,6 +23,8 @@ def pretrain(cfg: DictConfig):
     human_dataset = hydra.utils.instantiate(cfg.human_dataset)
     combine_dataset = ConcatDataset(robot_dataset, human_dataset)
 
+    paired_dataset = hydra.utils.instantiate(cfg.paired_dataset)
+
     dataloader = torch.utils.data.DataLoader(
         combine_dataset,
         batch_size=cfg.batch_size,
@@ -32,12 +34,14 @@ def pretrain(cfg: DictConfig):
         persistent_workers=cfg.persistent_workers,
         drop_last=cfg.drop_last)
 
+
     steps_per_epoch = len(dataloader)
 
     model = hydra.utils.instantiate(
         cfg.Model,
         steps_per_epoch=steps_per_epoch,
         pretrain_pipeline=pretrain_pipeline,
+        paired_dataset=paired_dataset
     )
 
     print("dataset len: ", len(combine_dataset))
@@ -51,9 +55,9 @@ def pretrain(cfg: DictConfig):
     )
 
     # Set up logger
-    wandb.init(project="kitchen_prototype_learning")
+    # wandb.init(project="kitchen_prototype_learning")
     # wandb_logger = WandbLogger(project="visual_skill_prior")
-    wandb.config.update(OmegaConf.to_container(cfg))
+    # wandb.config.update(OmegaConf.to_container(cfg))
     trainer = pl.Trainer(
         # logger=wandb_logger,
         callbacks=[TQDMProgressBar(refresh_rate=1), checkpoint_callback],

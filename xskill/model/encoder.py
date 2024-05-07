@@ -167,7 +167,7 @@ class VisualMotionEncoder(nn.Module):
         else:
             self.prototypes = None
 
-    def forward(self, image, state):
+    def forward(self, image, state, no_proj=False):
         """
         image: trajectory (b,t,c,h,w)
         state: bounding box (b,t,f) 
@@ -176,6 +176,9 @@ class VisualMotionEncoder(nn.Module):
                                                              state)  #(b,t,f)
         traj_representation = self.get_traj_representation(
             state_representation)
+
+        if no_proj:
+            return traj_representation
 
         # projection
         if self.prototypes is not None:

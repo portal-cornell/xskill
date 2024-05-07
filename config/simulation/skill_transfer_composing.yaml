@@ -9,7 +9,7 @@ policy_name: 'FILL'
 #   nearest_neighbor_replacement - will do l2 distance lookups into bank of human zs to generate new trajectory
 
 project_name: 'kitchen_prototype_diffusion_bc'
-use_wandb: False
+use_wandb: True
 num_epochs: 200
 lr: 1e-4
 weight_decay: 1e-6
@@ -47,6 +47,7 @@ softmax_prototype: False
 one_hot_prototype: False
 upsample_proto: False
 unconditioned_policy: False
+SAT_state_only: True
 human_type: 'none_simultaneous'
 dataset:
   _target_: xskill.dataset.diffusion_bc_dataset.KitchenBCDataset
@@ -73,9 +74,9 @@ dataset:
   paired_percent: 1
   paired_proto_dirs: ${pretrain_path}/${human_type}_encode_protos/ckpt_${pretrain_ckpt} 
   paired_demo_img_path: ${base_dev_dir}/xskill/datasets/kitchen_dataset/
-  nearest_neighbor_replacement: True
+  nearest_neighbor_replacement: False
   nearest_neighbor_data_dirs: ${pretrain_path}/${human_type}_l2/ckpt_${pretrain_ckpt} 
-  replace_percent: 0.5
+  replace_percent: 1
   save_lookups: False
   
 

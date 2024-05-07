@@ -177,6 +177,8 @@ def train_diffusion_bc(cfg: DictConfig):
                 [image_features, nobs],
                 dim=-1)  # (B,obs_horizon,low_dim_feature+visual_feature)
             # predict the proto: (B,obs_horizon*(low_dim_feature+visual_feature))),(B,snap_frames,D)
+            if cfg.SAT_state_only:
+                proto_snap.fill_(0)
             predict_proto = proto_pred_net(obs_feature.flatten(start_dim=1),
                                            proto_snap)
 
@@ -229,8 +231,12 @@ def train_diffusion_bc(cfg: DictConfig):
 
             # L2 loss
             action_loss = nn.functional.mse_loss(noise_pred, noise)
-            proto_prediction_loss = nn.functional.mse_loss(
-                predict_proto, nproto.squeeze(1))
+            if cfg.unconditioned_policy:
+                proto_prediction_loss = 0
+            else:
+                proto_prediction_loss = nn.functional.mse_loss(
+                    predict_proto, nproto.squeeze(1))
+            
             loss = action_loss + proto_prediction_loss
 
             # optimize
@@ -288,6 +294,7 @@ def train_diffusion_bc(cfg: DictConfig):
                             cfg.eval_cfg,
                             save_dir,
                             seed,
+                            model_cfg=cfg
                         )
                         total_rewards.append(total_r)
                         order_rewards.append(order_r)

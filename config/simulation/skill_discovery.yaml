@@ -43,6 +43,22 @@ human_dataset:
   resize_shape: ${resize_shape}
   max_get_threads: ${max_get_threads}
 
+paired_dataset:
+  _target_: xskill.dataset.dataset.PairedRepDataset
+  _allowed_dirs: [
+    '${base_dev_dir}/xskill/datasets/kitchen_dataset/robot',
+    '${base_dev_dir}/xskill/datasets/kitchen_dataset/none_simultaneous',
+  ]
+  vid_mask: ${robot_dataset.vid_mask}
+  frame_sampler:
+    _target_: xskill.dataset.frame_samplers.UniformDownSampleSampler
+    offset: ${robot_dataset.frame_sampler.offset}
+    num_frames: ${robot_dataset.frame_sampler.num_frames}
+    downsample_ratio: ${robot_dataset.frame_sampler.downsample_ratio}
+  slide: ${robot_dataset.slide}
+  resize_shape: ${resize_shape}
+  max_get_threads: ${max_get_threads}
+
 
 augmentations: ['random_crop_112_112','color_jitter','grayscale','gaussian_blur','normalize']
 
@@ -78,7 +94,6 @@ Model:
   use_temperature_scheduler: False
   positive_window: 4
   negative_window: 12
-
 
 
   skill_prior: 

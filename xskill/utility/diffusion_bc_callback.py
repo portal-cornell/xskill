@@ -245,7 +245,7 @@ class visual_diffusion_bc_prediction_callback:
         env = KitchenAllV0(use_abs_action=True)
         return env
 
-    def eval(self, nets, noise_scheduler, stats, eval_cfg, save_path, seed, epoch_num=None, task_list = ["slide cabinet", "light switch", "kettle", "microwave"]):
+    def eval(self, nets, noise_scheduler, stats, eval_cfg, save_path, seed, epoch_num=None, task_list = ["slide cabinet", "light switch", "kettle", "microwave"], model_cfg=None):
         """
         pretrain resize doesn't matter here.
         use bc_resize to resize the env input to desired size
@@ -318,6 +318,8 @@ class visual_diffusion_bc_prediction_callback:
                 [visual_feature, nobs],
                 dim=-1)  # (T,visual_feature+low_dim_feature)
             # feed in: (1,obs_feature*obs_horizon),(1,snap_frames,D)
+            if model_cfg is not None and 'SAT_state_only' in model_cfg and model_cfg.SAT_state_only:
+                proto_snap.fill_(0)
             nproto = nets["proto_pred_net"](
                 obs_feature.unsqueeze(0).flatten(start_dim=1),
                 proto_snap)  # (1,D)
@@ -338,6 +340,8 @@ class visual_diffusion_bc_prediction_callback:
                         dim=1,
                     )
                 else:
+                    if 'unconditioned_policy' in model_cfg and model_cfg.unconditioned_policy:
+                        nproto.fill_(0)
                     obs_cond = torch.cat([
                         obs_feature.unsqueeze(0).flatten(start_dim=1), nproto
                     ],

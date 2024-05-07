@@ -121,6 +121,7 @@ def main(cfg: DictConfig):
     None
     """
     save_dir = os.path.join(cfg.trained_model_path, 'post_training')
+    model_cfg = OmegaConf.load(os.path.join(cfg.trained_model_path, 'hydra_config.yaml'))
 
     nets = create_policy_nets(cfg)
     noise_scheduler = hydra.utils.instantiate(cfg.noise_scheduler)
@@ -175,7 +176,8 @@ def main(cfg: DictConfig):
                         save_dir,
                         seed,
                         epoch_num=None,
-                        task_list=task_list
+                        task_list=task_list,
+                        model_cfg=model_cfg
                     )
                     tasks_completed += num_completed
 
