@@ -1,0 +1,27 @@
+transforms3d
+opencv-python
+torch
+torchvision
+numpy
+pandas
+plotly
+pytest
+scipy
+tqdm
+huggingface-hub
+hydra-ray-launcher==1.2.0
+hydra-core==1.2.0
+hydra-submitit-launcher==1.2.0
+wandb==0.13.4
+timm==0.6.11
+gym==0.23.1
+dm-control==1.0.10
+dm-env==1.6
+dm-tree==0.1.8
+cloudpickle==2.0.0
+mujoco==2.3.2
+imageio==2.22.1
+imageio-ffmpeg==0.4.7
+diffusers==0.25.0
+r3m @ git+https://github.com/facebookresearch/r3m.git
+robobuf @ git+https://github.com/AGI-Labs/robobuf.git

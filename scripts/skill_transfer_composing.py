@@ -128,7 +128,7 @@ def train_diffusion_bc(cfg: DictConfig):
     # Exponential Moving Average
     # accelerates training and improves stability
     # holds a copy of the model weights
-    ema = EMAModel(model=nets, power=0.75)
+    ema = EMAModel(parameters=nets.parameters(), power=0.75)
 
     # Standard ADAM optimizer
     # Note that EMA parametesr are not optimized
@@ -167,6 +167,7 @@ def train_diffusion_bc(cfg: DictConfig):
             proto_snap = nbatch["proto_snap"].to(device)
             proto_snap = proto_snap.reshape(B, dataset.snap_frames, -1)
             naction = nbatch["actions"].to(device)
+
 
             # encoder vision features
             image_features = nets["vision_encoder"](nimage.flatten(end_dim=1))
