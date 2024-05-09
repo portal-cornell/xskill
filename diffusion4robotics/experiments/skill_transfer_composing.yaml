@@ -9,7 +9,7 @@ policy_name: 'FILL'
 #   nearest_neighbor_replacement - will do l2 distance lookups into bank of human zs to generate new trajectory
 
 project_name: 'kitchen_prototype_diffusion_bc'
-use_wandb: True
+use_wandb: False
 num_epochs: 600
 lr: 1e-4
 weight_decay: 1e-6

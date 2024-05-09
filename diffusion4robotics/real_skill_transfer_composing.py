@@ -138,6 +138,8 @@ def bc_finetune(cfg: DictConfig):
     # a dictionary
     ob_dict = json.load(ob_data)
     ac_dict = json.load(ac_data)
+    ac_max = np.array(ac_dict['maximum'])
+    ac_min = np.array(ac_dict['minimum'])
     with open('ac_norm.json', 'w') as f:
         json.dump(ac_dict, f)
     with open('ob_norm.json', 'w') as f:
@@ -186,6 +188,7 @@ def bc_finetune(cfg: DictConfig):
             
             for batch_idx in range(num_batches):
                 batch = next(batch_sampler)
+                
                 if gpu_transform is not None:
                     (imgs, obs), actions, mask = batch
                     imgs = {k: v.to(device) for k, v in imgs.items()}
@@ -283,6 +286,32 @@ def bc_finetune(cfg: DictConfig):
                 epoch_action_loss.append(action_loss.item())
                 if not model_cfg.unconditioned_policy:
                     epoch_proto_prediction_loss.append(proto_prediction_loss.item())
+                
+                with torch.no_grad():
+                    noisy_action = torch.randn(
+                        (B, pred_horizon, action_dim),
+                        device=device)
+                    naction = noisy_action
+
+                    # init scheduler
+                    noise_scheduler.set_timesteps(60)
+
+                    for k in noise_scheduler.timesteps:
+                        # predict noise
+                        noise_pred = nets["noise_pred_net"](sample=naction,
+                                                            timestep=k,
+                                                            global_cond=obs_cond)
+
+                        # inverse diffusion step (remove noise)
+                        naction = noise_scheduler.step(model_output=noise_pred,
+                                                    timestep=k,
+                                                    sample=naction).prev_sample
+                    
+                    # unnormalize action
+                    naction = naction.detach().to("cpu").numpy()
+                    # (B, pred_horizon, action_dim)
+                    naction = naction[0]
+                    ac = naction[0]
             if use_wandb:
                 wandb.log({
                     "epoch loss":
