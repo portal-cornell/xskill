@@ -68,6 +68,7 @@ class ReplayBuffer(Dataset):
         print('loading', buffer_path)
         with open(buffer_path, 'rb') as f:
             buffer_data = pkl.load(f)
+
         return buffer_data
 
     def __len__(self):

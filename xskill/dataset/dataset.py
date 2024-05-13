@@ -10,6 +10,7 @@ import pathlib
 import json
 import concurrent.futures
 import cv2
+import os
 IndexBatch = namedtuple("IndexBatch", "im_q index info")
 
 class EpisodeTrajDataset(torch.utils.data.Dataset):
@@ -23,6 +24,8 @@ class EpisodeTrajDataset(torch.utils.data.Dataset):
         vid_mask = None,
         max_get_threads = 4,
         resize_shape=[135, 135],
+        has_overhead=False,
+        for_labelling=False,
     ) -> None:
         super().__init__()
         self._frame_sampler = frame_sampler
@@ -39,7 +42,9 @@ class EpisodeTrajDataset(torch.utils.data.Dataset):
 
         self._allowed_dirs = _allowed_dirs
         print(self._allowed_dirs)
-
+        self.has_overhead = has_overhead
+        self.for_labelling = for_labelling
+        
         self.seed_rng()
         self._indexfile = {}
         self._build_dir_tree()
@@ -135,9 +140,19 @@ class EpisodeTrajDataset(torch.utils.data.Dataset):
         info['class_idx'] = class_idx
         info['vid_idx'] = vid_idx
         vid_paths = self._get_video_path(class_idx, vid_idx)
+        
+        if self.has_overhead:
+            vid_paths = os.path.join(vid_paths, 'overhead')
+        
+        if len(vid_paths) < 50:
+            print('bruh')
         sample = self._frame_sampler.sample(vid_paths)
+        if self.for_labelling:
+            sample['frame_idxs'] = [np.array(i) for i in range(len(sample['frames']))]
+            sample['ctx_idxs'] = [np.array(i) for i in range(len(sample['frames']))]
         sequence_data = self._get_sequence_data(sample,self.resize_shape)  # (T,h,w,dim)
-
+        if self.for_labelling:
+            return IndexBatch(sequence_data, idx, info)
         im_q = self.transform(sequence_data)
         return IndexBatch(im_q, idx, info)
 

@@ -9,8 +9,8 @@ policy_name: 'FILL'
 #   nearest_neighbor_replacement - will do l2 distance lookups into bank of human zs to generate new trajectory
 
 project_name: 'kitchen_prototype_diffusion_bc'
-use_wandb: False
-num_epochs: 200
+use_wandb: True
+num_epochs: 1000
 lr: 1e-4
 weight_decay: 1e-6
 ckpt_frequency: 5
@@ -30,16 +30,18 @@ persistent_workers: False
 
 
 #env setup
-obs_dim: 9
-action_dim: 9
+obs_dim: 8
+action_dim: 10
 proto_dim: 256
 vision_feature_dim: 64
-bc_resize: [112,112]
-pretrain_resize: [124,124]
-pretrain_pipeline: ["center_crop_112_112","normalize"]
+bc_resize: [224,224]
+pretrain_pipeline: ["center_crop_200_200","normalize"]
 
-pretrain_path: '${base_dev_dir}/xskill/experiment/pretrain/none_simultaneous_new'
+pretrain_policy_name: 'orig_batch'
+pretrain_path: '${base_dev_dir}/xskill/experiment/pretrain/${pretrain_policy_name}'
 pretrain_ckpt: 79
+# pretrain_path: '/share/portal/pd337/xskill/experiment/pretrain/2024-05-12_23-49-46'
+# pretrain_ckpt: 179
 # dataset
 raw_representation: True
 prototype: False
@@ -50,9 +52,14 @@ unconditioned_policy: True
 SAT_state_only: False
 human_type: 'none_simultaneous'
 dataset:
-  _target_: xskill.dataset.diffusion_bc_dataset.KitchenBCDataset
+  _target_: xskill.dataset.diffusion_bc_dataset.KitchenRealDataset
   resize_shape: ${bc_resize}
-  data_dirs: ['${base_dev_dir}/xskill/datasets/kitchen_dataset/robot']
+  data_dirs: [
+    '${base_dev_dir}/xskill/datasets/portal_table/board_pep_tart',
+    # '${base_dev_dir}/xskill/datasets/portal_table/board_tart_pep',
+    # '${base_dev_dir}/xskill/datasets/portal_table/board_pep_mustard',
+    # '${base_dev_dir}/xskill/datasets/portal_table/board_mustard_pep',
+    ]
   proto_dirs: ${pretrain_path}/encode_protos/ckpt_${pretrain_ckpt}
   pred_horizon: ${pred_horizon}
   obs_horizon: ${obs_horizon}
@@ -64,7 +71,7 @@ dataset:
   one_hot_prototype: ${one_hot_prototype}
   prototype_snap: True
   snap_frames: 100
-  mask: ${base_dev_dir}/xskill/datasets/kitchen_dataset/train_mask.json
+  mask: null
   obs_image_based: True
   unnormal_list: ['proto_snap','protos']
   seed: ${seed}
@@ -100,7 +107,7 @@ proto_pred_net:
   pos_encoder:
     _target_: xskill.model.transformer.PositionalEncoding
     size: ${proto_dim} 
-    max_len: 200
+    max_len: 241
     frequency: 10000
 
 

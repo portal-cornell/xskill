@@ -7,6 +7,8 @@ TRANSFORMS = {
     Tr.CenterCrop((110, 146)),
     "center_crop_112_112":
     Tr.CenterCrop((112, 112)),
+    "center_crop_200_200":
+    Tr.CenterCrop((200, 200)),
     "random_resized_crop":
     Tr.RandomResizedCrop(size=112, scale=(0.8, 1.0), ratio=(0.75, 1.333)),
     "random_resized_crop_216_288":
@@ -15,6 +17,8 @@ TRANSFORMS = {
                          ratio=(0.75, 1.333)),
     "random_crop_216_288":
     Tr.RandomCrop((216, 288)),
+    "random_crop_200_200":
+    Tr.RandomCrop((200, 200)),
     "random_crop_110_146":
     Tr.RandomCrop((110, 146)),
     "random_crop_112_112":

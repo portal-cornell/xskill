@@ -1,0 +1,55 @@
+base_dev_dir: /share/portal/pd337
+
+hydra:
+  run:
+    dir: '${base_dev_dir}/xskill/experiment/label_real_kitchen/${now:%Y-%m-%d_%H-%M-%S}'
+
+policy_name: 'none'
+exp_path: '${base_dev_dir}/xskill/experiment/pretrain/${policy_name}'
+save_path: ${exp_path}
+ckpt: 299
+device: 'cuda:0'
+
+
+
+resize_shape: [224,224]
+max_get_threads: 12
+
+robot_dataset:
+  _target_: xskill.dataset.dataset.EpisodeTrajDataset
+  _allowed_dirs: [
+    '${base_dev_dir}/xskill/datasets/portal_table/board_pep_tart',
+    '${base_dev_dir}/xskill/datasets/portal_table/board_tart_pep',
+    '${base_dev_dir}/xskill/datasets/portal_table/board_pep_mustard',
+    '${base_dev_dir}/xskill/datasets/portal_table/board_mustard_pep',
+  ]
+  frame_sampler:
+    _target_: xskill.dataset.frame_samplers.UniformDownSampleSampler
+    offset: 0
+    num_frames: 100
+    downsample_ratio: 1
+  slide: 8
+  resize_shape: ${resize_shape}
+  max_get_threads: ${max_get_threads}
+  has_overhead: True
+
+human_dataset:
+  _target_: xskill.dataset.dataset.EpisodeTrajDataset
+  _allowed_dirs: [
+    '${base_dev_dir}/xskill/datasets/portal_table_human/board_pep_tart',
+    '${base_dev_dir}/xskill/datasets/portal_table_human/board_tart_pep',
+    '${base_dev_dir}/xskill/datasets/portal_table_human/board_pep_mustard',
+    '${base_dev_dir}/xskill/datasets/portal_table_human/board_mustard_pep',
+  ]
+  frame_sampler:
+    _target_: xskill.dataset.frame_samplers.UniformDownSampleSampler
+    offset: ${robot_dataset.frame_sampler.offset}
+    num_frames: 50
+    downsample_ratio: ${robot_dataset.frame_sampler.downsample_ratio}
+  slide: ${robot_dataset.slide}
+  resize_shape: ${resize_shape}
+  max_get_threads: ${max_get_threads}
+  has_overhead: False
+
+augmentations: ['center_crop_200_200','normalize']
+

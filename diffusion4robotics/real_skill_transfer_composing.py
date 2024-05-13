@@ -59,7 +59,7 @@ def bc_finetune(cfg: DictConfig):
     proto_horizon = model_cfg.proto_horizon
 
     if model_cfg.vision_feature_dim == 512:
-        vision_encoder = get_resnet("resnet18")
+        vision_encoder = get_resnet("resnet18", weights="IMAGENET1K_V1")
     else:
         vision_encoder = ResnetConv(embedding_size=model_cfg.vision_feature_dim)
 
@@ -301,6 +301,7 @@ def bc_finetune(cfg: DictConfig):
                         noise_pred = nets["noise_pred_net"](sample=naction,
                                                             timestep=k,
                                                             global_cond=obs_cond)
+                        breakpoint()
 
                         # inverse diffusion step (remove noise)
                         naction = noise_scheduler.step(model_output=noise_pred,

@@ -25,9 +25,10 @@ class CNN(nn.Module):
         )
         self.linear = nn.Linear(6400, out_size)
 
-    def forward(self, images):
-
-        return self.linear(self.cnn(images))
+    def forward(self, images): 
+        x = self.cnn(images)
+        print(x.shape)
+        return self.linear(x)
 
 
 class CNN_v3(nn.Module):
@@ -43,11 +44,11 @@ class CNN_v3(nn.Module):
             nn.ReLU(),
             nn.Flatten(),
         )
-        self.linear = nn.Linear(8960, out_size)
+        self.linear = nn.Linear(28224, out_size)
 
     def forward(self, images):
-
-        return self.linear(self.cnn(images))
+        x = self.cnn(images)
+        return self.linear(x)
 
 
 class SimpleCNN(nn.Module):
@@ -152,7 +153,6 @@ class VisualMotionEncoder(nn.Module):
                  goal_condition=False,
                  temporal_transformer_encoder=None) -> None:
         super().__init__()
-
         self.vision_encoder = vision_encoder
         self.state_size = state_size
         self.out_size = out_size
