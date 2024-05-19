@@ -4,7 +4,7 @@ hydra:
   run:
     dir: '${base_dev_dir}/xskill/experiment/label_real_kitchen/${now:%Y-%m-%d_%H-%M-%S}'
 
-policy_name: 'none'
+policy_name: 'robot_only_converged'
 exp_path: '${base_dev_dir}/xskill/experiment/pretrain/${policy_name}'
 save_path: ${exp_path}
 ckpt: 299
@@ -19,8 +19,8 @@ robot_dataset:
   _target_: xskill.dataset.dataset.EpisodeTrajDataset
   _allowed_dirs: [
     '${base_dev_dir}/xskill/datasets/portal_table/board_pep_tart',
-    '${base_dev_dir}/xskill/datasets/portal_table/board_tart_pep',
-    '${base_dev_dir}/xskill/datasets/portal_table/board_pep_mustard',
+    # '${base_dev_dir}/xskill/datasets/portal_table/board_tart_pep',
+    # '${base_dev_dir}/xskill/datasets/portal_table/board_pep_mustard',
     '${base_dev_dir}/xskill/datasets/portal_table/board_mustard_pep',
   ]
   frame_sampler:
@@ -37,8 +37,8 @@ human_dataset:
   _target_: xskill.dataset.dataset.EpisodeTrajDataset
   _allowed_dirs: [
     '${base_dev_dir}/xskill/datasets/portal_table_human/board_pep_tart',
-    '${base_dev_dir}/xskill/datasets/portal_table_human/board_tart_pep',
-    '${base_dev_dir}/xskill/datasets/portal_table_human/board_pep_mustard',
+    # '${base_dev_dir}/xskill/datasets/portal_table_human/board_tart_pep',
+    # '${base_dev_dir}/xskill/datasets/portal_table_human/board_pep_mustard',
     '${base_dev_dir}/xskill/datasets/portal_table_human/board_mustard_pep',
   ]
   frame_sampler:

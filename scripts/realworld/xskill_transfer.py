@@ -56,6 +56,7 @@ def train_diffusion_bc(cfg: DictConfig):
     # parameters
     pred_horizon = cfg.pred_horizon
     obs_horizon = cfg.obs_horizon
+    true_obs_horizon = cfg.true_obs_horizon
     proto_horizon = cfg.proto_horizon
 
     dataset = hydra.utils.instantiate(cfg.dataset)
@@ -116,18 +117,18 @@ def train_diffusion_bc(cfg: DictConfig):
         noise_pred_net = hydra.utils.instantiate(
             cfg.noise_pred_net,
             global_cond_dim=vision_feature_dim * obs_horizon +
-            obs_dim * obs_horizon +
+            obs_dim * true_obs_horizon +
             proto_horizon * cfg.upsample_proto_net.out_size,
         )
     else:
         noise_pred_net = hydra.utils.instantiate(
             cfg.noise_pred_net,
             global_cond_dim=vision_feature_dim * obs_horizon +
-            obs_dim * obs_horizon + proto_horizon * proto_dim,
+            obs_dim * true_obs_horizon + proto_horizon * proto_dim,
         )
     proto_pred_net = hydra.utils.instantiate(
         cfg.proto_pred_net,
-        input_dim=vision_feature_dim * obs_horizon + obs_dim * obs_horizon,
+        input_dim=vision_feature_dim * obs_horizon + obs_dim * true_obs_horizon,
     )
 
     # the final arch has 4 parts
@@ -176,14 +177,14 @@ def train_diffusion_bc(cfg: DictConfig):
         epoch_loss = list()
         epoch_action_loss = list()
         epoch_proto_prediction_loss = list()
-
+        
         # batch loop
-        for nbatch in dataloader:
+        for batch_idx, nbatch in tqdm(enumerate(dataloader)):
             # data normalized in dataset
             # device transfer
-            
-            # (B, obs_horizon, obs_dim)
+            # (B, true_obs_horizon, obs_dim)
             nobs = nbatch["obs"].to(device)
+            nobs = nobs[:, -true_obs_horizon:]
             B = nobs.shape[0]
             # (B, obs_horizon, 3,224,224)
             nimage_wrist = nbatch["wrist_images"].to(device)
@@ -207,7 +208,7 @@ def train_diffusion_bc(cfg: DictConfig):
                 *nimage_wrist.shape[:2], -1)  # (B,obs_horizon,visual_feature)
 
             obs_feature = torch.cat(
-                [image_features, image_features_wrist, nobs],
+                [image_features.flatten(start_dim=1), image_features_wrist.flatten(start_dim=1), nobs.flatten(start_dim=1)],
                 dim=-1)  # (B,obs_horizon,low_dim_feature+visual_feature)
             # predict the proto: (B,obs_horizon*(low_dim_feature+visual_feature))),(B,snap_frames,D)
             if cfg.SAT_state_only:
@@ -218,7 +219,7 @@ def train_diffusion_bc(cfg: DictConfig):
             
 
             # (B, proto_horizon, obs_dim)
-            nobs = nobs[:, :obs_horizon, :]
+            # nobs = nobs[:, :obs_horizon, :]
 
             if cfg.upsample_proto:
                 upsample_proto = upsample_proto_net(

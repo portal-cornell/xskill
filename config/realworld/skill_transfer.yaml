@@ -19,6 +19,7 @@ seed: 43
 
 pred_horizon: 16
 obs_horizon: 2
+true_obs_horizon: 1
 action_horizon: 8 
 proto_horizon: 1
 
@@ -33,22 +34,22 @@ persistent_workers: False
 obs_dim: 8
 action_dim: 10
 proto_dim: 256
-vision_feature_dim: 64
+vision_feature_dim: 512
 bc_resize: [224,224]
 pretrain_pipeline: ["center_crop_200_200","normalize"]
 
-pretrain_policy_name: 'orig_batch'
-pretrain_path: '${base_dev_dir}/xskill/experiment/pretrain/${pretrain_policy_name}'
-pretrain_ckpt: 79
-# pretrain_path: '/share/portal/pd337/xskill/experiment/pretrain/2024-05-12_23-49-46'
-# pretrain_ckpt: 179
+# pretrain_policy_name: 'orig_batch'
+# pretrain_path: '${base_dev_dir}/xskill/experiment/pretrain/${pretrain_policy_name}'
+# pretrain_ckpt: 79
+pretrain_path: '/share/portal/pd337/xskill/experiment/pretrain/robot_only_converged'
+pretrain_ckpt: 299
 # dataset
 raw_representation: True
 prototype: False
 softmax_prototype: False
 one_hot_prototype: False
 upsample_proto: False
-unconditioned_policy: True
+unconditioned_policy: False
 SAT_state_only: False
 human_type: 'none_simultaneous'
 dataset:
@@ -58,7 +59,7 @@ dataset:
     '${base_dev_dir}/xskill/datasets/portal_table/board_pep_tart',
     # '${base_dev_dir}/xskill/datasets/portal_table/board_tart_pep',
     # '${base_dev_dir}/xskill/datasets/portal_table/board_pep_mustard',
-    # '${base_dev_dir}/xskill/datasets/portal_table/board_mustard_pep',
+    '${base_dev_dir}/xskill/datasets/portal_table/board_mustard_pep',
     ]
   proto_dirs: ${pretrain_path}/encode_protos/ckpt_${pretrain_ckpt}
   pred_horizon: ${pred_horizon}
