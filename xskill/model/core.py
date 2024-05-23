@@ -73,6 +73,7 @@ class Model(pl.LightningModule):
 
         self.pretrain_pipeline = pretrain_pipeline
         self.paired_dataset = paired_dataset
+        self.sample_idxs = torch.randperm(len(self.paired_dataset)).tolist()
         self.paired_data_cur_idx = 0
         self.paired_optimizer = torch.optim.Adam(self.encoder_q.parameters(), lr=self.lr)
         self.use_tcc_loss = use_tcc_loss
@@ -210,13 +211,14 @@ class Model(pl.LightningModule):
         
     def paired_training_step(self):
         # print(f'here: {self.paired_data_cur_idx}')
-        emb1, emb2 = self.paired_dataset[self.paired_data_cur_idx]
+        emb1, emb2 = self.paired_dataset[self.sample_idxs[self.paired_data_cur_idx]]
         emb1 = emb1.unsqueeze(0)
         emb2 = emb2.unsqueeze(0)
-        for i in range(1, 2):
-            next1, next2 = self.paired_dataset[self.paired_data_cur_idx+i]
+        batch_size = 28
+        for i in range(1, batch_size):
+            next1, next2 = self.paired_dataset[self.sample_idxs[self.paired_data_cur_idx+i]]
             emb1 = torch.cat((emb1, next1.unsqueeze(0)), dim=0)
-            emb2 = torch.cat((emb2, next1.unsqueeze(0)), dim=0)
+            emb2 = torch.cat((emb2, next2.unsqueeze(0)), dim=0)
 
         # emb1/emb2 (B, 100, 3, h, w), each batch element is a corresponding pair
         robot_batch = emb1
@@ -261,8 +263,10 @@ class Model(pl.LightningModule):
             rep_loss = rep_loss + self.compute_optimal_transport_loss(zc_r, zc_h)
         rep_loss.backward()
         self.paired_optimizer.step()
-        self.paired_data_cur_idx += 2
-        self.paired_data_cur_idx %= len(self.paired_dataset)
+        self.paired_data_cur_idx += batch_size
+        if self.paired_data_cur_idx >= len(self.paired_dataset):
+            self.sample_idxs = torch.randperm(len(self.paired_dataset)).tolist()
+            self.paired_data_cur_idx %= len(self.paired_dataset)
         
 
     # @profile

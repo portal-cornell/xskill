@@ -55,7 +55,7 @@ def pretrain(cfg: DictConfig):
     )
 
     # Set up logger
-    wandb.init(project="kitchen_prototype_learning", name = "wasserstein_dist_final")
+    wandb.init(project="kitchen_prototype_learning", name = f"{output_dir}")
     # wandb_logger = WandbLogger(project="visual_skill_prior")
     wandb.config.update(OmegaConf.to_container(cfg))
     trainer = pl.Trainer(

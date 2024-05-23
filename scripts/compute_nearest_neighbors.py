@@ -267,6 +267,8 @@ def main(cfg: DictConfig):
             json.dump({'correct_thresholds': list(range(cfg.correct_thresholds)), 'threshold_accs': thresh_accs.tolist()}, outfile)
         import matplotlib.pyplot as plt
         plt.figure(figsize=(8, 6))
+        # set y labels to go from 0 to 1
+        plt.ylim(0, 1)
         plt.plot(list(range(cfg.correct_thresholds)), thresh_accs)
         plt.title('Cycle Back Accuracy')
         plt.xlabel('Frame Threshold')

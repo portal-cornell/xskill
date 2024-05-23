@@ -1,8 +1,9 @@
 base_dev_dir: '/share/portal/pd337'
 
+exp_name: 'pretrain_no_pairing'
 hydra:
   run:
-    dir: '${base_dev_dir}/xskill/experiment/pretrain/${now:%Y-%m-%d_%H-%M-%S}'
+    dir: '${base_dev_dir}/xskill/experiment/pretrain/${exp_name}_${now:%Y-%m-%d_%H-%M-%S}'
 
 seed: 45
 batch_size: 28
@@ -95,6 +96,8 @@ Model:
   use_temperature_scheduler: False
   positive_window: 4
   negative_window: 12
+  use_tcc_loss: False
+  use_opt_loss: False
 
   skill_prior: 
     _target_: xskill.model.encoder.VisualMotionPrior
