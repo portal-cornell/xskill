@@ -6,10 +6,11 @@ hydra:
 
 seed: 45
 batch_size: 28
-num_workers: 1
+num_workers: 4
 pin_memory: False
 persistent_workers: True
 drop_last: True
+cross_embodiment: human
 
 resize_shape: [124,124]
 max_get_threads: 24
@@ -31,7 +32,7 @@ robot_dataset:
 human_dataset:
   _target_: xskill.dataset.dataset.EpisodeTrajDataset
   _allowed_dirs: [
-    '${base_dev_dir}/xskill/datasets/kitchen_dataset/none_simultaneous',
+    '${base_dev_dir}/xskill/datasets/kitchen_dataset/${cross_embodiment}',
   ]
   vid_mask: ${robot_dataset.vid_mask}
   frame_sampler:
@@ -47,7 +48,7 @@ paired_dataset:
   _target_: xskill.dataset.dataset.PairedRepDataset
   _allowed_dirs: [
     '${base_dev_dir}/xskill/datasets/kitchen_dataset/robot',
-    '${base_dev_dir}/xskill/datasets/kitchen_dataset/none_simultaneous',
+    '${base_dev_dir}/xskill/datasets/kitchen_dataset/${cross_embodiment}',
   ]
   vid_mask: ${robot_dataset.vid_mask}
   frame_sampler:
@@ -95,7 +96,6 @@ Model:
   positive_window: 4
   negative_window: 12
 
-
   skill_prior: 
     _target_: xskill.model.encoder.VisualMotionPrior
     out_size: 128
@@ -103,7 +103,6 @@ Model:
     vision_encoder:
       _target_: xskill.model.encoder.CNN
       out_size: ${Model.skill_prior.out_size}
-
 
     nmb_prototypes: ${Model.dim}
     normalize: False

@@ -34,7 +34,9 @@ class Model(pl.LightningModule):
         positive_window=1,
         negative_window=10,
         pretrain_pipeline=None,
-        paired_dataset=None
+        paired_dataset=None,
+        use_tcc_loss=False,
+        use_opt_loss=True
     ):
         super(Model, self).__init__()
 
@@ -150,9 +152,62 @@ class Model(pl.LightningModule):
         self.training_step_helper(human_batch, batch_idx)
         # TODO: Add training step helper for paired data
 
-    def paired_training_step(self):
-        print(f'here: {self.paired_data_cur_idx}')
+    def align_sequence_pair(self,
+        emb1,
+        emb2,
+        similarity_type,
+        temperature,
+        normalize_dimension,
+    ):
+        """Align a pair of sequences."""
+        max_num_steps = emb1.shape[0]
+        sim_12 = get_scaled_similarity(emb1, emb2, similarity_type, temperature,
+                                        normalize_dimension)
+        softmaxed_sim_12 = F.softmax(sim_12, dim=1)  # Row-wise softmax.
+        nn_embs = torch.mm(softmaxed_sim_12, emb2)
+        sim_21 = get_scaled_similarity(nn_embs, emb1, similarity_type, temperature,
+                                        normalize_dimension)
+        logits = sim_21
+        labels = torch.arange(max_num_steps).to(logits.device)
+        return logits, labels
 
+    def tcc_loss(self, emb1, emb2):
+        """Compute the TCC loss between a pair of sequences."""
+        similarity = -torch.cdist(emb1, emb2, p=2)/self.T
+        beta = F.softmax(similarity, dim=0)
+        half_cycle = torch.bmm(beta, emb2)
+        similarity = -torch.cdist(half_cycle, emb1, p=2)/self.T
+        beta = F.softmax(similarity, dim=0)
+        cycle_back = torch.bmm(beta, emb2)
+        return F.mse_loss(cycle_back, emb1)
+    
+
+    def compute_tcc_loss(self, zc_r, zc_h):
+        robot_cycle_back_loss = self.tcc_loss(zc_r, zc_h)
+        human_cycle_back_loss = self.tcc_loss(zc_h, zc_r)
+        return robot_cycle_back_loss + human_cycle_back_loss
+
+    def batch_cosine_distance(self, x, y):
+        C = torch.bmm(x, y.transpose(1, 2))
+        x_norm = torch.norm(x, p=2, dim=2)
+        y_norm = torch.norm(y, p=2, dim=2)
+        x_n = x_norm.unsqueeze(2)
+        y_n = y_norm.unsqueeze(2)
+        norms = torch.bmm(x_n, y_n.transpose(1, 2))
+        C = (1 - C / norms)
+        return C
+
+    def compute_optimal_transport_loss(self, zc_r, zc_h):
+        dist = self.batch_cosine_distance(zc_r, zc_h)
+
+        total_loss = 0
+        for i in range(dist.shape[0]):
+            assignment = self.distributed_sinkhorn(dist[i])
+            total_loss += torch.sum(assignment * dist[i])/dist.shape[1]
+        return total_loss
+        
+    def paired_training_step(self):
+        # print(f'here: {self.paired_data_cur_idx}')
         emb1, emb2 = self.paired_dataset[self.paired_data_cur_idx]
         emb1 = emb1.unsqueeze(0)
         emb2 = emb2.unsqueeze(0)
@@ -183,6 +238,7 @@ class Model(pl.LightningModule):
             ])  # (b,slide+1,c,h,w)
             human_batch_clips.append(im_h)
             
+        # breakpoint()
         robot_batch_clips = torch.cat(robot_batch_clips, dim=0)
         human_batch_clips = torch.cat(human_batch_clips, dim=0)
 
@@ -191,10 +247,18 @@ class Model(pl.LightningModule):
                                   im_k=human_batch_clips.to('cuda'),
                                   bbox_k=None,
                                   no_proj=True)
-        breakpoint()
-        # TODO: Write the loss and optimize, put lower LR?
-                
-
+        
+        # break a tensor in the first dimension into 2 equally sized tensors
+        zc_r, zc_h = torch.stack(torch.chunk(zc_r, batch_size)), torch.stack(torch.chunk(zc_h, batch_size))
+        
+        self.paired_optimizer.zero_grad()
+        rep_loss = torch.tensor(0.0, requires_grad=True)
+        if self.use_tcc_loss:
+            rep_loss += self.compute_tcc_loss(zc_r, zc_h)
+        if self.use_opt_loss:
+            rep_loss += self.compute_optimal_transport_loss(zc_r, zc_h)
+        rep_loss.backward()
+        self.paired_optimizer.step()
         self.paired_data_cur_idx += 2
         self.paired_data_cur_idx %= len(self.paired_dataset)
         
@@ -275,7 +339,7 @@ class Model(pl.LightningModule):
         with torch.no_grad():
             assignent_q = self.distributed_sinkhorn(zc_k)
             assignent_k = self.distributed_sinkhorn(zc_q)
-
+        # breakpoint()
         rep_loss += 0.5 * (-torch.mean(
             torch.sum(assignent_q * F.log_softmax(zc_q / self.T, dim=1), dim=1)
         ) - torch.mean(
