@@ -55,9 +55,9 @@ def pretrain(cfg: DictConfig):
     )
 
     # Set up logger
-    # wandb.init(project="kitchen_prototype_learning", name = "no_pairing_loss")
+    wandb.init(project="kitchen_prototype_learning", name = "wasserstein_dist_final")
     # wandb_logger = WandbLogger(project="visual_skill_prior")
-    # wandb.config.update(OmegaConf.to_container(cfg))
+    wandb.config.update(OmegaConf.to_container(cfg))
     trainer = pl.Trainer(
         # logger=wandb_logger,
         callbacks=[TQDMProgressBar(refresh_rate=1), checkpoint_callback],

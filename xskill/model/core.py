@@ -75,6 +75,8 @@ class Model(pl.LightningModule):
         self.paired_dataset = paired_dataset
         self.paired_data_cur_idx = 0
         self.paired_optimizer = torch.optim.Adam(self.encoder_q.parameters(), lr=self.lr)
+        self.use_tcc_loss = use_tcc_loss
+        self.use_opt_loss = use_opt_loss
 
     # @profile
     def forward(self, im_q, bbox_q, im_k=None, bbox_k=None, no_proj=False):
@@ -254,9 +256,9 @@ class Model(pl.LightningModule):
         self.paired_optimizer.zero_grad()
         rep_loss = torch.tensor(0.0, requires_grad=True)
         if self.use_tcc_loss:
-            rep_loss += self.compute_tcc_loss(zc_r, zc_h)
+            rep_loss = rep_loss + self.compute_tcc_loss(zc_r, zc_h)
         if self.use_opt_loss:
-            rep_loss += self.compute_optimal_transport_loss(zc_r, zc_h)
+            rep_loss = rep_loss + self.compute_optimal_transport_loss(zc_r, zc_h)
         rep_loss.backward()
         self.paired_optimizer.step()
         self.paired_data_cur_idx += 2
