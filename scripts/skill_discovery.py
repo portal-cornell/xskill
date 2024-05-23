@@ -55,7 +55,7 @@ def pretrain(cfg: DictConfig):
     )
 
     # Set up logger
-    wandb.init(project="kitchen_prototype_learning", name = f"{output_dir}")
+    wandb.init(project="kitchen_prototype_learning", name = f"{output_dir.split('/')[-1]}")
     # wandb_logger = WandbLogger(project="visual_skill_prior")
     wandb.config.update(OmegaConf.to_container(cfg))
     trainer = pl.Trainer(

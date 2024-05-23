@@ -264,7 +264,7 @@ class Model(pl.LightningModule):
         rep_loss.backward()
         self.paired_optimizer.step()
         self.paired_data_cur_idx += batch_size
-        if self.paired_data_cur_idx >= len(self.paired_dataset):
+        if self.paired_data_cur_idx + batch_size >= len(self.paired_dataset):
             self.sample_idxs = torch.randperm(len(self.paired_dataset)).tolist()
             self.paired_data_cur_idx %= len(self.paired_dataset)
         
