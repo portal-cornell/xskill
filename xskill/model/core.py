@@ -260,13 +260,13 @@ class Model(pl.LightningModule):
         if self.use_tcc_loss:
             rep_loss = rep_loss + self.compute_tcc_loss(zc_r, zc_h)
         if self.use_opt_loss:
-            rep_loss = rep_loss + self.compute_optimal_transport_loss(zc_r, zc_h)
+            rep_loss = rep_loss + self.compute_optimal_transport_loss(zc_r, zc_h)/batch_size
         rep_loss.backward()
         self.paired_optimizer.step()
         self.paired_data_cur_idx += batch_size
         if self.paired_data_cur_idx + batch_size >= len(self.paired_dataset):
             self.sample_idxs = torch.randperm(len(self.paired_dataset)).tolist()
-            self.paired_data_cur_idx %= len(self.paired_dataset)
+            self.paired_data_cur_idx = 0
         
 
     # @profile
