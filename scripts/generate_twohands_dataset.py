@@ -43,22 +43,137 @@ ACTION_GOALS = {
     ],
 }
 
+HAND_GOALS = {
+    "bottom burner": [
+        np.array([-0.30, 0.40, 2.30]),
+        np.array([-0.30, 0.40, 2.30])],
+    "top burner": [
+        np.array([-0.30, 0.40, 2.40]),
+        np.array([-0.30, 0.40, 2.40])],
+    "light switch": [
+        np.array([-0.40, 0.50, 2.28]),
+        np.array([-0.40, 0.50, 2.28])],
+    "slide cabinet": [
+        np.array([-0.1, 0.55, 2.6]),
+        np.array([0.3, 0.55, 2.6])],
+    "hinge cabinet": [
+        np.array([-0.5, 0.55, 2.6]),
+        np.array([-0.10, 0.30, 2.6])],
+    "microwave": [
+        np.array([-0.6, 0.3, 1.95]),
+        np.array([-0.75, 0.1, 1.85])],
+    "lift kettle": [
+        np.array([-0.26, 0.3, 1.9]),
+        np.array([-0.26, 0.3, 2.2]),
+        np.array([-0.26, 0.65, 2.1]),
+        np.array([-0.23, 0.75, 1.9]),
+    ],
+}
+
+HAND_GOALS = {
+    "bottom burner": [
+        np.array([-0.30, 0.40, 2.30]),
+        np.array([-0.30, 0.40, 2.30])],
+    "top burner": [
+        np.array([-0.30, 0.40, 2.40]),
+        np.array([-0.30, 0.40, 2.40])],
+    "light switch": [
+        np.array([-0.40, 0.50, 2.28]),
+        np.array([-0.40, 0.50, 2.28])],
+    "slide cabinet": [
+        np.array([-0.1, 0.55, 2.6]),
+        np.array([0.3, 0.55, 2.6])],
+    "hinge cabinet": [
+        np.array([-0.5, 0.55, 2.6]),
+        np.array([-0.10, 0.30, 2.6])],
+    "microwave": [
+        np.array([-0.6, 0.3, 1.95]),
+        np.array([-0.75, 0.1, 1.85])],
+    "lift kettle": [
+        np.array([-0.26, 0.3, 1.9]),
+        np.array([-0.26, 0.3, 2.2]),
+        np.array([-0.26, 0.65, 2.1]),
+        np.array([-0.23, 0.75, 1.9]),
+    ],
+}
+def randomize_handgoals():
+    global HAND_GOALS
+    for key in HAND_GOALS.keys():
+        if key == "bottom burner":
+            xnoise = np.random.uniform(-0.025, 0.025)
+            znoise = np.random.uniform(-0.025, 0.025)
+            HAND_GOALS[key] = [
+                np.array([-0.30+xnoise, 0.40, 2.30+znoise]),
+                np.array([-0.30+xnoise, 0.40, 2.30+znoise])]
+        elif key == "top burner":
+            xnoise = np.random.uniform(-0.025, 0.025)
+            znoise = np.random.uniform(-0.025, 0.025)
+            HAND_GOALS[key] = [
+                np.array([-0.30+xnoise, 0.40, 2.40+znoise]),
+                np.array([-0.30+xnoise, 0.40, 2.40+znoise])]
+        elif key == "light switch":
+            xnoise = np.random.uniform(-0.025, 0.025)
+            znoise = np.random.uniform(-0.025, 0.025)
+            HAND_GOALS[key] = [
+                np.array([-0.40+xnoise, 0.50, 2.28+znoise]),
+                np.array([-0.40+xnoise, 0.50, 2.28+znoise])]
+        elif key == "slide cabinet":
+            xnoise = np.random.uniform(-0.025, 0.025)
+            znoise = np.random.uniform(-0.025, 0.025)
+            HAND_GOALS[key] = [
+                np.array([-0.1+xnoise, 0.55, 2.6+znoise]),
+                np.array([0.3+xnoise, 0.55, 2.6+znoise])]
+        elif key == "hinge cabinet":
+            xnoise = np.random.uniform(-0.025, 0.025)
+            znoise = np.random.uniform(-0.025, 0.025)
+            HAND_GOALS[key] = [
+                np.array([-0.5+xnoise, 0.55, 2.6+znoise]),
+                np.array([-0.10+xnoise, 0.30, 2.6+znoise])]
+        elif key == "microwave":
+            xnoise = np.random.uniform(-0.025, 0.025)
+            znoise = np.random.uniform(-0.025, 0.025)
+            HAND_GOALS[key] = [
+                np.array([-0.6+xnoise, 0.3, 1.95+znoise]),
+                np.array([-0.75+xnoise, 0.1, 1.85+znoise])]
+        elif key == "lift kettle":
+            xnoise = np.random.uniform(-0.025, 0.025)
+            znoise = np.random.uniform(-0.025, 0.025)
+            HAND_GOALS[key] = [
+                np.array([-0.26+xnoise, 0.3, 1.9+znoise]),
+                np.array([-0.26+xnoise, 0.3, 2.2+znoise]),
+                np.array([-0.26+xnoise, 0.65, 2.1+znoise]),
+                np.array([-0.23+xnoise, 0.75, 1.9+znoise]),
+            ]
+
 KETTLE_INIT = np.array([-0.269, 0.35, 1.62, 0.99, 0.0, 0.0, 0.0])
+HAND_POS = np.array([-0.48, 0.10, 2.05, -0.38, 0.10, 2.05])
+LEFTHAND_POS = np.array([-0.48, 0.10, 2.05])
+RIGHTHAND_POS = np.array([-0.38, 0.10, 2.05])
 
 
 def interpolate(start, end, ease_function, duration):
     """
     Interpolate between the start and end points using a desired ease function
     """
+    # breakpoint()
     steps = (np.array(range(duration))) / (duration - 1)
-    ease = np.vectorize(ease_function)
-    easedValues = ease(steps)
-    res = start + (end - start) * easedValues
+    # ease = np.vectorize(ease_function)
+    # breakpoint()
+    # try:
+    #     easedValues = ease(steps)
+    # except:
+    #     breakpoint()
+    easedValues = steps
+    # vectorize next line
+    # res = start + (end - start) * easedValues
+    res = np.array([start + (end - start) * easedValues[i] for i in range(len(easedValues))])
     return res
 
 
 def set_goal(
     positions,
+    handpos,
+    active_hand,
     action_item,
     start_time,
     time_count,
@@ -82,8 +197,11 @@ def set_goal(
     ----------
     numpy array updated with this action
     """
+    global LEFTHAND_POS, RIGHTHAND_POS
     goal = ACTION_GOALS[action_item]
     action_index = ACTION_INDICES[action_item]
+
+
     for i in range(len(action_index)):
         position_index = action_index[i]
         start = start_time
@@ -91,6 +209,28 @@ def set_goal(
             duration = time_count[j]
             pause = pauses[j]
             goal_position = goal[j][i] * float(completion)
+            # breakpoint()
+            if i==0:
+                if active_hand=="left":
+                    if pause > 0:
+                        hand_movement_start = interpolate(LEFTHAND_POS, HAND_GOALS[action_item][j], easeFunction, pause)
+                        handpos[start:start+pause, :3] = hand_movement_start
+                    else:
+                        handpos[start:start+pause, :3] = LEFTHAND_POS
+                    hand_movement_goal = interpolate(HAND_GOALS[action_item][j], HAND_GOALS[action_item][j+1], easeFunction, duration)
+                    LEFTHAND_POS = HAND_GOALS[action_item][j+1]
+                    handpos[start+pause:start+pause+duration, :3] = hand_movement_goal
+                else:
+                    if pause > 0:
+                        hand_movement_start = interpolate(RIGHTHAND_POS, HAND_GOALS[action_item][j], easeFunction, pause)
+                        handpos[start:start+pause, 3:] = hand_movement_start
+                    else:
+                        handpos[start:start+pause, 3:] = RIGHTHAND_POS
+                    hand_movement_goal = interpolate(HAND_GOALS[action_item][j], HAND_GOALS[action_item][j+1], easeFunction, duration)
+                    RIGHTHAND_POS = HAND_GOALS[action_item][j+1]
+                    handpos[start+pause:start+pause+duration, 3:] = hand_movement_goal
+                    
+
             change = interpolate(
                 positions[start][position_index], goal_position, easeFunction, duration
             )
@@ -99,7 +239,7 @@ def set_goal(
             positions[start+pause:end_of_action, position_index] = change
             positions[end_of_action:, position_index] = goal_position
             start = end_of_action
-    return positions
+    return positions, handpos
 
 
 def create_pos(
@@ -127,6 +267,7 @@ def create_pos(
     numpy array representing the full sequence of actions
     """
     assert len(order) == len(actions)
+    # breakpoint()
     groups = defaultdict(list)
     for ind in range(len(actions)):
         groups[order[ind]].append(actions[ind])
@@ -135,37 +276,64 @@ def create_pos(
     durations = []
     for group in action_groups:
         duration = 0
+        pause = 0
         for action in group:
             duration = max(
                 duration, np.sum(action["durations"]) + np.sum(action["pause"])
             )
-            
         durations.append(duration)
+        # breakpoint()
     eps_len = np.sum(durations)
-    init_qpos = np.array([1.48388023e-01,
-                -1.76848573e00,
-                1.84390296e00,
-                -2.47685760e00,
-                2.60252026e-01,
-                7.12533105e-01,
-                1.59515394e00])
     res = np.array([[0.0] * 30 for i in range(eps_len)], dtype="f")
-    res[:, :7] = init_qpos
-    res[:, 7] = 0.08
+    handpos = np.array([[0.0] * 6 for i in range(eps_len)], dtype="f")
+    handpos[:, :3] = LEFTHAND_POS
+    handpos[:, 3:] = RIGHTHAND_POS
+    # res[:, :7] = init_qpos
     res[:, 23] = np.array([KETTLE_INIT[0]] * eps_len, dtype="f")
     res[:, 24] = np.array([KETTLE_INIT[1]] * eps_len, dtype="f")
     res[:, 25] = np.array([KETTLE_INIT[2]] * eps_len, dtype="f")
     res[:, 26] = np.array([KETTLE_INIT[3]] * eps_len, dtype="f")
     start_time = 0
+
     for group_number in range(len(action_groups)):
-        for action in action_groups[group_number]:
+        # for action in action_groups[group_number]:
+        lefthand_righthand_assign_dist = 0
+        left_action = action_groups[group_number][0]["action"]
+        left_goal = HAND_GOALS[left_action][0]
+        lefthand_righthand_assign_dist += np.linalg.norm(LEFTHAND_POS - left_goal)
+        right_action = action_groups[group_number][1]["action"]
+        right_goal = HAND_GOALS[right_action][0]
+        lefthand_righthand_assign_dist += np.linalg.norm(RIGHTHAND_POS - right_goal)
+        
+        righthand_left_assign_dist = 0
+        left_action = action_groups[group_number][1]["action"]
+        left_goal = HAND_GOALS[left_action][0]
+        righthand_left_assign_dist += np.linalg.norm(LEFTHAND_POS - left_goal)
+        right_action = action_groups[group_number][0]["action"]
+        right_goal = HAND_GOALS[right_action][0]
+        righthand_left_assign_dist += np.linalg.norm(RIGHTHAND_POS - right_goal)
+
+        if lefthand_righthand_assign_dist < righthand_left_assign_dist:
+            left_first = True
+        else:
+            left_first = False
+        # for action in action_groups[group_number]:
+        for i in range(len(action_groups[group_number])):
+            action = action_groups[group_number][i]
+            if i == 0 and left_first or i==1 and not left_first:
+                active_hand = "left"
+            else:
+                active_hand = "right"
             action_name = action["action"]
             duration = action["durations"]
             pause = action["pause"]
+            # breakpoint()
             open_completion = action["completion"]
             ease = action["ease"]
-            res = set_goal(
+            res, handpos = set_goal(
                 res,
+                handpos,
+                active_hand,
                 action_name,
                 start_time,
                 duration,
@@ -174,7 +342,8 @@ def create_pos(
                 ease,
             )
         start_time = start_time + durations[group_number]
-    return res
+    # breakpoint()
+    return res, handpos
 
 
 # @hydra.main(
@@ -243,15 +412,16 @@ def create_pos(
 #         episode_idx = episode_idx + 1
 #     env.close()
 
-# @hydra.main(
-#     version_base=None,
-#     config_path="../config/simulation",
-#     config_name="generate_kitchen",
-# )
-def generate_render():
+@hydra.main(
+    version_base=None,
+    config_path="../config/simulation",
+    config_name="generate_kitchen",
+)
+def generate_render(cfg: DictConfig):
     task_completions_list = read_json(f"/share/portal/kk837/xskill/datasets/kitchen_dataset/task_completions.json")
     # breakpoint()
     for eps_idx, task_list in enumerate(task_completions_list):
+        randomize_handgoals()
         actions = []
         for task in task_list:
             if task == "kettle":
@@ -270,38 +440,53 @@ def generate_render():
                 actions.append(top_burner_action)
             else:
                 raise NotImplementedError
+        # actions.append(microwave_action)
+        # actions.append(top_burner_action)
+        # actions.append(bottom_burner_action)
         env = KitchenAllV0(use_abs_action=True, 
                            use_sphere_agent=False, 
                            use_none=False,
-                           use_single_hand=True,
-                           use_two_hands=False)
+                           use_single_hand=False,
+                           use_two_hands=True)
         # video_path = cfg.video_path
         # breakpoint()
         env.reset()
         frames = []
         # breakpoint()
-        reset_pos = create_pos(actions, list(range(len(actions))))
+        reset_pos, handpos = create_pos(actions, [1, 1, 3, 3])
+
+        for i in range(len(reset_pos)):
+            env.sim.model.body_pos[-2][:3] = handpos[i][:3]
+            env.sim.model.body_pos[-1][:3] = handpos[i][3:]
+            env.robot.reset(env, reset_pos[i], env.init_qvel[:].copy())
+            image_observations = env.render(width=cfg.res, height=cfg.res)
+            image_observations = Image.fromarray(image_observations)
+            video_filepath = os.path.join(cfg.video_path, f'{eps_idx}/{i}.png')
+            os.makedirs(os.path.join(cfg.video_path, f'{eps_idx}'), exist_ok=True)
+            image_observations.save(video_filepath)
+        env.close()
 
         # for i in range(len(reset_pos)):
-        for i in range(100):
-            env.sim.model.body_pos[-1][2]-=0.1
-            env.robot.reset(env, reset_pos[i], env.init_qvel[:].copy())
-            image_observations = env.render(width=400, height=400)
-            image_observations = Image.fromarray(image_observations)
-            frames.append(image_observations)
-        # make a gif grom frames
-        # video_filename = f"test_configs_{eps_idx}.mp4"
-        # video_filepath = os.path.join(cfg.video_path, video_filename)
+        # # for i in range(100):
+        #     env.sim.model.body_pos[-2][:3] = handpos[i][:3]
+        #     env.sim.model.body_pos[-1][:3] = handpos[i][3:]
+        #     env.robot.reset(env, reset_pos[i], env.init_qvel[:].copy())
+        #     image_observations = env.render(width=400, height=400)
+        #     image_observations = Image.fromarray(image_observations)
+        #     frames.append(image_observations)
+        # # make a gif grom frames
+        #     # video_filename = f"test_configs_{eps_idx}.mp4"
+        #     # video_filepath = os.path.join(cfg.video_path, video_filename)
         # Save the frames as a video using imageio
-        frames[0].save("test.gif", save_all=True, 
-        append_images=frames[1:], optimize=False, duration=100, loop=0)
+        # frames[0].save("test.gif", save_all=True, 
+        # append_images=frames[1:], optimize=False, duration=100, loop=0)
 
 
             # video_filepath = os.path.join(video_path, f'{eps_idx}/{i}.png')
             # os.makedirs(os.path.join(video_path, f'{eps_idx}'), exist_ok=True)
             # image_observations.save(video_filepath)
-        env.close()
-        break
+        # env.close()
+        # break
 
 if __name__ == "__main__":
     # create_renders()

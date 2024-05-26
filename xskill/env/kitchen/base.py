@@ -62,6 +62,8 @@ class KitchenBase(KitchenTaskRelaxV1):
         use_abs_action=False,
         use_sphere_agent=False,
         use_none=False,
+        use_single_hand=False,
+        use_two_hands=False,
         **kwargs
     ):
         self.tasks_to_complete = list(self.TASK_ELEMENTS)
@@ -70,6 +72,8 @@ class KitchenBase(KitchenTaskRelaxV1):
             use_abs_action=use_abs_action,
             use_sphere_agent=use_sphere_agent,
             use_none=use_none,
+            use_single_hand=use_single_hand,
+            use_two_hands=use_two_hands,
             **kwargs,
         )
 

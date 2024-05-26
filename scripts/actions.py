@@ -34,9 +34,9 @@ def create_action(action, duration=[20], pause=[10], completion=1, ease=ease_out
     }
 
 
-# v0
+# v1
 lift_kettle_action = create_action(
-    "lift kettle", duration = [20, 10, 20], pause = [30, 0, 0], ease=ease_linear
+    "lift kettle", duration = [10, 10, 10], pause = [30, 0, 0], ease=ease_linear
 )
 top_burner_action = create_action(
     "top burner", duration = [30], pause = [30], ease=ease_linear
@@ -45,17 +45,40 @@ bottom_burner_action = create_action(
     "bottom burner", duration = [30], pause = [30], ease=ease_linear
 )
 slide_action = create_action(
-    "slide cabinet", duration = [20], pause = [25], ease=ease_linear
+    "slide cabinet", duration = [30], pause = [30], ease=ease_linear
 )
 hinge_action = create_action(
-    "hinge cabinet", duration = [30], pause = [25], ease=ease_linear
+    "hinge cabinet", duration = [30], pause = [30], ease=ease_linear
 )
 microwave_action = create_action(
-    "microwave", duration = [30], pause = [35], ease=ease_linear
+    "microwave", duration = [30], pause = [30], ease=ease_linear
 )
 light_action = create_action(
-    "light switch", duration = [10], pause = [35], ease=ease_linear
+    "light switch", duration = [30], pause = [30], ease=ease_linear
 )
+
+# v0 - invisible
+# lift_kettle_action = create_action(
+#     "lift kettle", duration = [20, 10, 20], pause = [30, 0, 0], ease=ease_linear
+# )
+# top_burner_action = create_action(
+#     "top burner", duration = [30], pause = [30], ease=ease_linear
+# )
+# bottom_burner_action = create_action(
+#     "bottom burner", duration = [30], pause = [30], ease=ease_linear
+# )
+# slide_action = create_action(
+#     "slide cabinet", duration = [20], pause = [25], ease=ease_linear
+# )
+# hinge_action = create_action(
+#     "hinge cabinet", duration = [30], pause = [25], ease=ease_linear
+# )
+# microwave_action = create_action(
+#     "microwave", duration = [30], pause = [35], ease=ease_linear
+# )
+# light_action = create_action(
+#     "light switch", duration = [10], pause = [35], ease=ease_linear
+# )
 
 
 # top_burner_action = create_action("top burner")

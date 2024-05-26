@@ -45,6 +45,8 @@ class KitchenV0(robot_env.RobotEnv):
         use_abs_action=False,
         use_sphere_agent=False,
         use_none=False,
+        use_single_hand=False,
+        use_two_hands=False,
     ):
         self.goal_concat = True
         self.obs_dict = {}
@@ -65,6 +67,16 @@ class KitchenV0(robot_env.RobotEnv):
             self.MODEl = os.path.join(
                 os.path.dirname(__file__),
                 "../franka/assets/franka_kitchen_jntpos_act_ab_none.xml",
+            )
+        if use_single_hand:
+            self.MODEl = os.path.join(
+                os.path.dirname(__file__),
+                "../franka/assets/franka_kitchen_jntpos_act_ab_singlehand.xml",
+            )
+        if use_two_hands:
+            self.MODEl = os.path.join(
+                os.path.dirname(__file__),
+                "../franka/assets/franka_kitchen_jntpos_act_ab_twohands.xml",
             )
         super().__init__(
             self.MODEl,
@@ -238,11 +250,14 @@ class KitchenV0(robot_env.RobotEnv):
 class KitchenTaskRelaxV1(KitchenV0):
     """Kitchen environment with proper camera and goal setup"""
 
-    def __init__(self, use_abs_action=False, use_sphere_agent=False, use_none=False):
+    def __init__(self, use_abs_action=False, use_sphere_agent=False, 
+                 use_none=False, use_single_hand=False, use_two_hands=False):
         super(KitchenTaskRelaxV1, self).__init__(
             use_abs_action=use_abs_action,
             use_sphere_agent=use_sphere_agent,
             use_none=use_none,
+            use_single_hand=use_single_hand,
+            use_two_hands=use_two_hands,
         )
 
     def _get_reward_n_score(self, obs_dict):
