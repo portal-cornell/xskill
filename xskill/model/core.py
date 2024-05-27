@@ -183,7 +183,7 @@ class Model(pl.LightningModule):
         half_cycle = torch.bmm(beta, emb2)
         similarity = -torch.cdist(half_cycle, emb1, p=2)/self.T
         beta = F.softmax(similarity, dim=0)
-        cycle_back = torch.bmm(beta, emb2)
+        cycle_back = torch.bmm(beta, emb1)
         return F.mse_loss(cycle_back, emb1)
     
 
