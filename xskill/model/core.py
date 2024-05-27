@@ -78,8 +78,8 @@ class Model(pl.LightningModule):
         self.paired_optimizer = torch.optim.Adam(self.encoder_q.parameters(), lr=self.lr)
         self.use_tcc_loss = use_tcc_loss
         self.use_opt_loss = use_opt_loss
-        self.tcc_loss = 0
-        self.ot_loss = 0
+        self.tcc_loss_log = 0
+        self.ot_loss_log = 0
 
     # @profile
     def forward(self, im_q, bbox_q, im_k=None, bbox_k=None, no_proj=False):
@@ -176,7 +176,7 @@ class Model(pl.LightningModule):
         labels = torch.arange(max_num_steps).to(logits.device)
         return logits, labels
 
-    def tcc_loss_comp(self, emb1, emb2):
+    def tcc_loss_(self, emb1, emb2):
         """Compute the TCC loss between a pair of sequences."""
         similarity = -torch.cdist(emb1, emb2, p=2)/self.T
         beta = F.softmax(similarity, dim=0)
@@ -188,8 +188,8 @@ class Model(pl.LightningModule):
     
 
     def compute_tcc_loss(self, zc_r, zc_h):
-        robot_cycle_back_loss = self.tcc_loss_comp(zc_r, zc_h)
-        human_cycle_back_loss = self.tcc_loss_comp(zc_h, zc_r)
+        robot_cycle_back_loss = self.tcc_loss_(zc_r, zc_h)
+        human_cycle_back_loss = self.tcc_loss_(zc_h, zc_r)
         return robot_cycle_back_loss + human_cycle_back_loss
 
     def batch_cosine_distance(self, x, y):
@@ -268,12 +268,12 @@ class Model(pl.LightningModule):
         
         self.paired_optimizer.zero_grad()
         rep_loss = torch.tensor(0.0, requires_grad=True)
-        self.tcc_loss = self.compute_tcc_loss(zc_r, zc_h)
-        self.ot_loss = self.compute_optimal_transport_loss(zc_r, zc_h)/batch_size
+        self.tcc_loss_log = self.compute_tcc_loss(zc_r, zc_h)
+        self.ot_loss_log = self.compute_optimal_transport_loss(zc_r, zc_h)/batch_size
         if self.use_tcc_loss:
-            rep_loss = rep_loss + self.tcc_loss
+            rep_loss = rep_loss + self.tcc_loss_log
         if self.use_opt_loss:
-            rep_loss = rep_loss + self.ot_loss
+            rep_loss = rep_loss + self.ot_loss_log
         rep_loss.backward()
         self.paired_optimizer.step()
         self.paired_data_cur_idx += batch_size
@@ -466,11 +466,11 @@ class Model(pl.LightningModule):
                 'prior_lr':
                 s_sch.get_lr()[0] if self.use_lr_scheduler else self.lr,
                 'T':
-                self.T
+                self.T,
                 'tcc_loss':
-                self.tcc_loss,
+                self.tcc_loss_log,
                 'ot_loss':
-                self.ot_loss
+                self.ot_loss_log
             })
 
     # @profile
