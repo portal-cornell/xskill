@@ -9,6 +9,7 @@ import numpy as np
 from collections import defaultdict
 from actions import *
 # base_dev_dir = "/share/portal/pd337"
+import json
 from xskill.utility.utils import read_json
 
 ACTION_INDICES = {
@@ -148,7 +149,9 @@ def randomize_handgoals():
 KETTLE_INIT = np.array([-0.269, 0.35, 1.62, 0.99, 0.0, 0.0, 0.0])
 HAND_POS = np.array([-0.48, 0.10, 2.05, -0.38, 0.10, 2.05])
 LEFTHAND_POS = np.array([-0.48, 0.10, 2.05])
+INIT_LEFTHAND_POS = np.array([-0.48, 0.10, 2.05])
 RIGHTHAND_POS = np.array([-0.38, 0.10, 2.05])
+INIT_RIGHTHAND_POS = np.array([-0.38, 0.10, 2.055])
 
 
 def interpolate(start, end, ease_function, duration):
@@ -301,14 +304,20 @@ def create_pos(
         left_action = action_groups[group_number][0]["action"]
         left_goal = HAND_GOALS[left_action][0]
         lefthand_righthand_assign_dist += np.linalg.norm(LEFTHAND_POS - left_goal)
-        right_action = action_groups[group_number][1]["action"]
-        right_goal = HAND_GOALS[right_action][0]
-        lefthand_righthand_assign_dist += np.linalg.norm(RIGHTHAND_POS - right_goal)
-        
+        if len(action_groups[group_number]) == 2:
+            right_action = action_groups[group_number][1]["action"]
+            right_goal = HAND_GOALS[right_action][0]
+            lefthand_righthand_assign_dist += np.linalg.norm(RIGHTHAND_POS - right_goal)
+        else:
+            lefthand_righthand_assign_dist += 0
+
         righthand_left_assign_dist = 0
-        left_action = action_groups[group_number][1]["action"]
-        left_goal = HAND_GOALS[left_action][0]
-        righthand_left_assign_dist += np.linalg.norm(LEFTHAND_POS - left_goal)
+        if len(action_groups[group_number]) == 2:
+            left_action = action_groups[group_number][1]["action"]
+            left_goal = HAND_GOALS[left_action][0]
+            righthand_left_assign_dist += np.linalg.norm(LEFTHAND_POS - left_goal)
+        else:
+            righthand_left_assign_dist += 0
         right_action = action_groups[group_number][0]["action"]
         right_goal = HAND_GOALS[right_action][0]
         righthand_left_assign_dist += np.linalg.norm(RIGHTHAND_POS - right_goal)
@@ -341,6 +350,11 @@ def create_pos(
                 open_completion,
                 ease,
             )
+        if len(action_groups[group_number]) == 1:
+            if left_first:
+                handpos[start_time:start_time + durations[group_number], 3:] = RIGHTHAND_POS
+            else:
+                handpos[start_time:start_time + durations[group_number], :3] = LEFTHAND_POS
         start_time = start_time + durations[group_number]
     # breakpoint()
     return res, handpos
@@ -418,10 +432,13 @@ def create_pos(
     config_name="generate_kitchen",
 )
 def generate_render(cfg: DictConfig):
+    global LEFTHAND_POS, RIGHTHAND_POS, INIT_LEFTHAND_POS, INIT_RIGHTHAND_POS
     task_completions_list = read_json(f"/share/portal/kk837/xskill/datasets/kitchen_dataset/task_completions.json")
     # breakpoint()
     for eps_idx, task_list in enumerate(task_completions_list):
         randomize_handgoals()
+        LEFTHAND_POS = INIT_LEFTHAND_POS
+        RIGHTHAND_POS = INIT_RIGHTHAND_POS
         actions = []
         for task in task_list:
             if task == "kettle":
@@ -453,7 +470,12 @@ def generate_render(cfg: DictConfig):
         env.reset()
         frames = []
         # breakpoint()
-        reset_pos, handpos = create_pos(actions, [1, 1, 3, 3])
+        # actions.pop()
+        # breakpoint()
+        if len(actions) == 3:
+            reset_pos, handpos = create_pos(actions, [1, 1, 3])
+        else:
+            reset_pos, handpos = create_pos(actions, [1, 1, 3, 3])
 
         for i in range(len(reset_pos)):
             env.sim.model.body_pos[-2][:3] = handpos[i][:3]
@@ -465,6 +487,10 @@ def generate_render(cfg: DictConfig):
             os.makedirs(os.path.join(cfg.video_path, f'{eps_idx}'), exist_ok=True)
             image_observations.save(video_filepath)
         env.close()
+
+        eps_path = os.path.join(cfg.video_path, f'{eps_idx}')
+        with open(os.path.join(eps_path, "states.json"), "w") as f:
+            json.dump(reset_pos.tolist(), f)
 
         # for i in range(len(reset_pos)):
         # # for i in range(100):

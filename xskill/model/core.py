@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import wandb
 from torch import nn
-
+import time
 
 class Model(pl.LightningModule):
 
@@ -199,14 +199,23 @@ class Model(pl.LightningModule):
         norms = torch.bmm(x_n, y_n.transpose(1, 2))
         C = (1 - C / norms)
         return C
-
+    
     def compute_optimal_transport_loss(self, zc_r, zc_h):
         dist = self.batch_cosine_distance(zc_r, zc_h)
-
         total_loss = 0
+        ct = time.time()
         for i in range(dist.shape[0]):
-            assignment = self.distributed_sinkhorn(dist[i])
-            total_loss += torch.sum(assignment * dist[i])/dist.shape[1]
+            neg_dists = torch.zeros(dist.shape[0])
+            for j in range(dist.shape[0]):
+                cosin_dists = self.batch_cosine_distance(zc_r[i].unsqueeze(0), zc_h[j].unsqueeze(0))
+                assignment = self.distributed_sinkhorn(cosin_dists[0])
+                distance = torch.sum(assignment * cosin_dists[0])
+                neg_dists[j] = torch.exp(-distance)
+                if i == j:
+                    pos_dist = torch.exp(-distance)
+            total_loss += pos_dist/torch.sum(neg_dists)
+        print("Time taken for OT calculcation = ", time.time() - ct)
+        # breakpoint()
         return total_loss
         
     def paired_training_step(self):
@@ -480,3 +489,28 @@ class Model(pl.LightningModule):
 
         Q *= B  # the colomns must sum to 1 so that Q is an assignment
         return Q.t()
+    
+    # @profile
+    # @torch.no_grad()
+    # def batched_distributed_sinkhorn(self, out):
+    #     Q = torch.exp(out / self.epsilon).t(
+    #     )  # Q is K-by-B for consistency with notations from our paper
+    #     B = Q.shape[1]  # number of samples to assign
+    #     K = Q.shape[0]  # how many prototypes
+
+    #     # make the matrix sums to 1
+    #     sum_Q = torch.sum(Q)
+    #     Q /= sum_Q
+
+    #     for it in range(self.sinkhorn_iterations):
+    #         # normalize each row: total weight per prototype must be 1/K
+    #         sum_of_rows = torch.sum(Q, dim=1, keepdim=True)
+    #         Q /= sum_of_rows
+    #         Q /= K
+
+    #         # normalize each column: total weight per sample must be 1/B
+    #         Q /= torch.sum(Q, dim=0, keepdim=True)
+    #         Q /= B
+
+    #     Q *= B  # the colomns must sum to 1 so that Q is an assignment
+    #     return Q.t()

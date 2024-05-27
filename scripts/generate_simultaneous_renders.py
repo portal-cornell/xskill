@@ -265,7 +265,10 @@ def generate_render(cfg:DictConfig):
         env.reset()
         frames = []
 
-        reset_pos = create_pos(actions, [1, 1, 3, 3])
+        if len(actions) == 3:
+            reset_pos = create_pos(actions, [1, 1, 3])
+        else:
+            reset_pos = create_pos(actions, [1, 1, 3, 3])
 
         for i in range(len(reset_pos)):
             env.robot.reset(env, reset_pos[i], env.init_qvel[:].copy())

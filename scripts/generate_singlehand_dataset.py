@@ -10,6 +10,7 @@ from collections import defaultdict
 from actions import *
 # base_dev_dir = "/share/portal/pd337"
 from xskill.utility.utils import read_json
+import json
 
 ACTION_INDICES = {
     "bottom burner": np.array([11, 12]),
@@ -120,6 +121,7 @@ def randomize_handgoals():
 
 KETTLE_INIT = np.array([-0.269, 0.35, 1.62, 0.99, 0.0, 0.0, 0.0])
 HAND_POS = np.array([-0.43, 0.10, 2.05])
+INIT_HAND_POS = np.array([-0.43, 0.10, 2.05])
 
 
 def interpolate(start, end, ease_function, duration):
@@ -350,10 +352,12 @@ def create_pos(
     config_name="generate_kitchen",
 )
 def generate_render(cfg: DictConfig):
+    global HAND_POS, INIT_HAND_POS
     task_completions_list = read_json(f"/share/portal/kk837/xskill/datasets/kitchen_dataset/task_completions.json")
     # breakpoint()
     for eps_idx, task_list in enumerate(task_completions_list):
         randomize_handgoals()
+        HAND_POS = INIT_HAND_POS
         actions = []
         for task in task_list:
             if task == "kettle":
@@ -396,6 +400,10 @@ def generate_render(cfg: DictConfig):
             os.makedirs(os.path.join(cfg.video_path, f'{eps_idx}'), exist_ok=True)
             image_observations.save(video_filepath)
         env.close()
+
+        eps_path = os.path.join(cfg.video_path, f'{eps_idx}')
+        with open(os.path.join(eps_path, "states.json"), "w") as f:
+            json.dump(reset_pos.tolist(), f)
         # make a gif grom frames
         # video_filename = f"test_configs_{eps_idx}.mp4"
         # video_filepath = os.path.join(cfg.video_path, video_filename)
