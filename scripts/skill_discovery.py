@@ -19,12 +19,15 @@ def pretrain(cfg: DictConfig):
     pretrain_pipeline = get_transform_pipeline(cfg.augmentations)
 
     seed_everything(cfg.seed, workers=True)
+    # breakpoint()
     robot_dataset = hydra.utils.instantiate(cfg.robot_dataset)
     human_dataset = hydra.utils.instantiate(cfg.human_dataset)
-    combine_dataset = ConcatDataset(robot_dataset, human_dataset)
+    # combine_dataset = ConcatDataset(robot_dataset, human_dataset)
 
     paired_dataset = hydra.utils.instantiate(cfg.paired_dataset)
 
+    
+    combine_dataset = ConcatDataset(robot_dataset, human_dataset, paired_dataset)
     dataloader = torch.utils.data.DataLoader(
         combine_dataset,
         batch_size=cfg.batch_size,
@@ -33,6 +36,15 @@ def pretrain(cfg: DictConfig):
         pin_memory=cfg.pin_memory,
         persistent_workers=cfg.persistent_workers,
         drop_last=cfg.drop_last)
+    
+    # paired_dataloader = torch.utils.data.DataLoader(
+    #     paired_dataset,
+    #     batch_size=cfg.batch_size,
+    #     num_workers=cfg.num_workers,
+    #     shuffle=True,
+    #     pin_memory=cfg.pin_memory,
+    #     persistent_workers=cfg.persistent_workers,
+    #     drop_last=cfg.drop_last)
 
 
     steps_per_epoch = len(dataloader)
@@ -41,7 +53,6 @@ def pretrain(cfg: DictConfig):
         cfg.Model,
         steps_per_epoch=steps_per_epoch,
         pretrain_pipeline=pretrain_pipeline,
-        paired_dataset=paired_dataset
     )
 
     print("dataset len: ", len(combine_dataset))

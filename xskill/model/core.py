@@ -34,7 +34,7 @@ class Model(pl.LightningModule):
         positive_window=1,
         negative_window=10,
         pretrain_pipeline=None,
-        paired_dataset=None,
+        paired_dataloader=None,
         use_tcc_loss=False,
         use_opt_loss=True
     ):
@@ -72,9 +72,7 @@ class Model(pl.LightningModule):
 
 
         self.pretrain_pipeline = pretrain_pipeline
-        self.paired_dataset = paired_dataset
-        self.sample_idxs = torch.randperm(len(self.paired_dataset)).tolist()
-        self.paired_data_cur_idx = 0
+        self.paired_dataloader = paired_dataloader
         self.paired_optimizer = torch.optim.Adam(self.encoder_q.parameters(), lr=self.lr)
         self.use_tcc_loss = use_tcc_loss
         self.use_opt_loss = use_opt_loss
@@ -149,33 +147,6 @@ class Model(pl.LightningModule):
             max_T, min_T + (max_T - min_T) /
             (self.trainer.max_epochs / 2) * self.trainer.current_epoch)
 
-    def training_step(self, batch, batch_idx):
-        robot_batch, human_batch = batch
-        if self.paired_dataset is not None:
-            self.paired_training_step()
-        self.training_step_helper(robot_batch, batch_idx)
-        self.training_step_helper(human_batch, batch_idx)
-        # TODO: Add training step helper for paired data
-
-    def align_sequence_pair(self,
-        emb1,
-        emb2,
-        similarity_type,
-        temperature,
-        normalize_dimension,
-    ):
-        """Align a pair of sequences."""
-        max_num_steps = emb1.shape[0]
-        sim_12 = get_scaled_similarity(emb1, emb2, similarity_type, temperature,
-                                        normalize_dimension)
-        softmaxed_sim_12 = F.softmax(sim_12, dim=1)  # Row-wise softmax.
-        nn_embs = torch.mm(softmaxed_sim_12, emb2)
-        sim_21 = get_scaled_similarity(nn_embs, emb1, similarity_type, temperature,
-                                        normalize_dimension)
-        logits = sim_21
-        labels = torch.arange(max_num_steps).to(logits.device)
-        return logits, labels
-
     def tcc_loss_(self, emb1, emb2):
         """Compute the TCC loss between a pair of sequences."""
         similarity = -torch.cdist(emb1, emb2, p=2)/self.T
@@ -219,22 +190,16 @@ class Model(pl.LightningModule):
         print("Time taken for OT calculcation = ", time.time() - ct)
         # breakpoint()
         return total_loss
-        
-    def paired_training_step(self):
-        # print(f'here: {self.paired_data_cur_idx}')
-        emb1, emb2 = self.paired_dataset[self.sample_idxs[self.paired_data_cur_idx]]
-        emb1 = emb1.unsqueeze(0)
-        emb2 = emb2.unsqueeze(0)
-        batch_size = 28
-        for i in range(1, batch_size):
-            next1, next2 = self.paired_dataset[self.sample_idxs[self.paired_data_cur_idx+i]]
-            emb1 = torch.cat((emb1, next1.unsqueeze(0)), dim=0)
-            emb2 = torch.cat((emb2, next2.unsqueeze(0)), dim=0)
+    
+    def training_step(self, batch, batch_idx):
+        robot_batch, human_batch, paired_batch = batch
+        paired_robot_batch, paired_human_batch = paired_batch
+        self.paired_training_step(paired_robot_batch, paired_human_batch, batch_idx)
+        self.training_step_helper(robot_batch, batch_idx)
+        self.training_step_helper(human_batch, batch_idx)
 
-        # emb1/emb2 (B, 100, 3, h, w), each batch element is a corresponding pair
-        robot_batch = emb1
-        human_batch = emb2
-
+    # @profile
+    def paired_training_step(self, robot_batch, human_batch, batch_idx):
         batch_size = robot_batch.shape[0]
         robot_batch_clips = []
         human_batch_clips = []
@@ -262,10 +227,8 @@ class Model(pl.LightningModule):
                                   im_k=human_batch_clips.to('cuda'),
                                   bbox_k=None,
                                   no_proj=True)
-        
         # break a tensor in the first dimension into 2 equally sized tensors
         zc_r, zc_h = torch.stack(torch.chunk(zc_r, batch_size)), torch.stack(torch.chunk(zc_h, batch_size))
-        
         self.paired_optimizer.zero_grad()
         rep_loss = torch.tensor(0.0, requires_grad=True)
         self.tcc_loss_log = self.compute_tcc_loss(zc_r, zc_h)
@@ -276,12 +239,7 @@ class Model(pl.LightningModule):
             rep_loss = rep_loss + self.ot_loss_log
         rep_loss.backward()
         self.paired_optimizer.step()
-        self.paired_data_cur_idx += batch_size
-        if self.paired_data_cur_idx + batch_size >= len(self.paired_dataset):
-            self.sample_idxs = torch.randperm(len(self.paired_dataset)).tolist()
-            self.paired_data_cur_idx = 0
         
-
     # @profile
     def training_step_helper(self, batch, batch_idx):
         e_opt, s_opt = self.optimizers()
@@ -289,6 +247,7 @@ class Model(pl.LightningModule):
         batch_size = eps_im.shape[0]
 
         # normalize the prototypes
+        start_time = time.time()
         with torch.no_grad():
             w = self.encoder_q.prototypes.weight.data.clone()
             w = nn.functional.normalize(w, dim=1, p=2)
@@ -340,7 +299,8 @@ class Model(pl.LightningModule):
                                   bbox_q=None,
                                   im_k=swav_batch_im_k,
                                   bbox_k=None)
-
+        end_of_forward_time = time.time()
+        print("Forward Step time in XSKILL batch = ", end_of_forward_time - start_time)
         if self.reverse_augment:
             chunk_zc_q, chunk_zc_k = torch.chunk(zc_q,
                                                  2 * batch_size), torch.chunk(
