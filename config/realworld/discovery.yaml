@@ -6,7 +6,7 @@ hydra:
 
 policy_name: null
 seed: 45
-batch_size: 2
+batch_size: 10
 num_workers: 1
 pin_memory: False
 persistent_workers: True
@@ -36,10 +36,10 @@ robot_dataset:
 human_dataset:
   _target_: xskill.dataset.dataset.EpisodeTrajDataset
   _allowed_dirs: [
-    '${base_dev_dir}/xskill/datasets/portal_table_human/board_pep_tart',
-    # '${base_dev_dir}/xskill/datasets/portal_table_human/board_tart_pep',
-    # '${base_dev_dir}/xskill/datasets/portal_table_human/board_pep_mustard',
-    '${base_dev_dir}/xskill/datasets/portal_table_human/board_mustard_pep',
+    '${base_dev_dir}/xskill/datasets/portal_table_human/resized/board_pep_tart',
+    # '${base_dev_dir}/xskill/datasets/portal_table_human/resized/board_tart_pep',
+    # '${base_dev_dir}/xskill/datasets/portal_table_human/resized/board_pep_mustard',
+    '${base_dev_dir}/xskill/datasets/portal_table_human/resized/board_mustard_pep',
   ]
   vid_mask: ${robot_dataset.vid_mask}
   frame_sampler:

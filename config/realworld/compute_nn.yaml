@@ -3,9 +3,10 @@ base_dev_dir: '/share/portal/pd337'
 resize_shape: [224,224]
 data_path: ${base_dev_dir}/xskill/datasets/portal_table
 task_json_path: null
-exp_path: '${base_dev_dir}/xskill/experiment/pretrain/real_pep_tart'
+# exp_path: '${base_dev_dir}/xskill/experiment/pretrain/real_pep_tart'
+exp_path: /share/portal/pd337/xskill/experiment/pretrain/2024-05-12_23-49-46
 human_type: 'pep_tart'
-ckpt: 299
+ckpt: 179
 device: 'cuda:0'
 
 correct_thresholds: 10

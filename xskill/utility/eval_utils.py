@@ -102,7 +102,10 @@ def gif_of_clip(cfg, demo_type, ep_num, frame_num, slide, output_dir, cycle=Fals
         Images from the specified clip
     """
     data_path = os.path.join(cfg.data_path, demo_type)
+    data_path = os.path.join(cfg.data_path + ('_human' if not demo_type=='robot' else ''), 'board_pep_mustard')
     data_folder = os.path.join(data_path, f'{ep_num}')
+    if demo_type == 'robot':
+        data_folder = os.path.join(data_folder, 'overhead')
 
     images_arr = load_images(data_folder, resize_shape=cfg.resize_shape)
 
@@ -149,7 +152,10 @@ def traj_representations(cfg, model, pipeline, demo_type, ep_num, frame_list=Non
         Tensor of shape (T, K), representing a distribution across prototypes
     """
     data_path = os.path.join(cfg.data_path, demo_type)
+    data_path = os.path.join(cfg.data_path + ('_human' if not demo_type=='robot' else ''), 'board_pep_mustard')
     data_folder = os.path.join(data_path, f'{ep_num}')
+    if demo_type == 'robot':
+        data_folder = os.path.join(data_folder, 'overhead')
 
     images_arr = load_images(data_folder, resize_shape=cfg.resize_shape)
 

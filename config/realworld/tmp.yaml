@@ -1,0 +1,137 @@
+base_dev_dir: /share/portal/pd337
+save_dir: /share/portal/pd337/xskill/experiment/diffusion_bc/kitchen/
+policy_name: FILL
+project_name: kitchen_prototype_diffusion_bc
+use_wandb: true
+num_epochs: 1000
+lr: 0.0001
+weight_decay: 1.0e-06
+ckpt_frequency: 5
+seed: 43
+pred_horizon: 16
+obs_horizon: 2
+true_obs_horizon: 1
+action_horizon: 8
+proto_horizon: 1
+batch_size: 128
+num_workers: 0
+pin_memory: false
+persistent_workers: false
+obs_dim: 8
+action_dim: 10
+proto_dim: 256
+vision_feature_dim: 512
+bc_resize:
+- 224
+- 224
+pretrain_pipeline:
+- center_crop_200_200
+- normalize
+pretrain_policy_name: orig_batch
+pretrain_path: ${base_dev_dir}/xskill/experiment/pretrain/${pretrain_policy_name}
+pretrain_ckpt: 79
+raw_representation: true
+prototype: false
+softmax_prototype: false
+one_hot_prototype: false
+upsample_proto: false
+unconditioned_policy: true
+SAT_state_only: false
+human_type: none_simultaneous
+dataset:
+  _target_: xskill.dataset.diffusion_bc_dataset.KitchenRealDataset
+  resize_shape: ${bc_resize}
+  data_dirs:
+  - ${base_dev_dir}/xskill/datasets/portal_table/board_tart_pep
+  proto_dirs: ${pretrain_path}/encode_protos/ckpt_${pretrain_ckpt}
+  pred_horizon: ${pred_horizon}
+  obs_horizon: ${obs_horizon}
+  action_horizon: ${action_horizon}
+  proto_horizon: ${proto_horizon}
+  raw_representation: ${raw_representation}
+  softmax_prototype: ${softmax_prototype}
+  prototype: ${prototype}
+  one_hot_prototype: ${one_hot_prototype}
+  prototype_snap: true
+  snap_frames: 100
+  mask: null
+  obs_image_based: true
+  unnormal_list:
+  - proto_snap
+  - protos
+  seed: ${seed}
+  verbose: true
+  human_type: ${human_type}
+  paired_data: false
+  paired_percent: 1
+  paired_proto_dirs: ${pretrain_path}/${human_type}_encode_protos/ckpt_${pretrain_ckpt}
+  paired_demo_img_path: ${base_dev_dir}/xskill/datasets/kitchen_dataset/
+  nearest_neighbor_replacement: false
+  nearest_neighbor_data_dirs: ${pretrain_path}/${human_type}_l2/ckpt_${pretrain_ckpt}
+  replace_percent: 1
+  save_lookups: false
+upsample_proto_net:
+  _target_: xskill.model.network.Mlp
+  in_size: ${proto_dim}
+  out_size: 256
+  net_arch: []
+proto_pred_net:
+  _target_: xskill.model.transformer.TorchTransformerProtoPredictor
+  query_dim: ${proto_dim}
+  heads: 4
+  dim_feedforward: 512
+  n_layer: 16
+  proto_dim: ${proto_dim}
+  use_encoder: true
+  input_dim: null
+  pos_encoder:
+    _target_: xskill.model.transformer.PositionalEncoding
+    size: ${proto_dim}
+    max_len: 241
+    frequency: 10000
+num_diffusion_iters: 60
+noise_pred_net:
+  _target_: xskill.model.diffusion_model.ConditionalUnet1D
+  input_dim: ${action_dim}
+  global_cond_dim: null
+noise_scheduler:
+  _target_: diffusers.schedulers.scheduling_ddpm.DDPMScheduler
+  num_train_timesteps: ${num_diffusion_iters}
+  beta_schedule: squaredcos_cap_v2
+  clip_sample: true
+  prediction_type: epsilon
+task_progess_ratio_list:
+- 1
+demo_type_list:
+- robot
+- human
+eval_callback:
+  _target_: xskill.utility.diffusion_bc_callback.visual_diffusion_bc_prediction_callback
+  raw_representation: ${raw_representation}
+  softmax_prototype: ${softmax_prototype}
+  prototype: ${prototype}
+  one_hot_prototype: ${one_hot_prototype}
+  snap_frames: ${dataset.snap_frames}
+  task_progess_ratio: -1
+  pretain_model_path: ${pretrain_path}
+  pretrain_model_ckpt: ${pretrain_ckpt}
+eval_cfg:
+  n_evaluations: 2
+  eval_frequency: 20
+  pretrain_path: ${pretrain_path}
+  pretrain_ckpt: ${pretrain_ckpt}
+  bc_resize: ${bc_resize}
+  pretrain_pipeline: ${pretrain_pipeline}
+  resize_shape: ${pretrain_resize}
+  eval_mask_path: ${base_dev_dir}/xskill/datasets/kitchen_dataset/eval_mask.json
+  demo_path: ${base_dev_dir}/xskill/datasets/kitchen_dataset/
+  demo_item: 247
+  demo_type: human
+  max_steps: 275
+  obs_horizon: ${obs_horizon}
+  pred_horizon: ${pred_horizon}
+  action_dim: ${action_dim}
+  action_horizon: ${action_horizon}
+  proto_horizon: ${proto_horizon}
+  upsample_proto: ${upsample_proto}
+  num_diffusion_iters: ${num_diffusion_iters}
