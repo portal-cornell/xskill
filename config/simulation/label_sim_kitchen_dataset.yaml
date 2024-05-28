@@ -12,5 +12,6 @@ human_type: 'none_simultaneous'
 device: 'cuda:0'
 plot_top_k: null
 verbose: True
+include_transition: True
 
 batch_size: 28
