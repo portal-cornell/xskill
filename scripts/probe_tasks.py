@@ -71,6 +71,25 @@ for combination in combinations:
     # print(taskset2)
 
 
+from torch.utils.data import DataLoader, TensorDataset
+import torch
+from xskill.dataset.dataset import ConcatDataset
+
+# Create two dummy datasets for the example
+x1 = torch.randn(100, 10)
+y1 = torch.randn(100, 1)
+dataset1 = TensorDataset(x1, y1)
+
+x2 = torch.randn(200, 10)
+y2 = torch.randn(200, 1)
+dataset2 = TensorDataset(x2, y2)
+
+# breakpoint()
+# Concatenate the datasets
+combined_dataset = ConcatDataset(dataset1, dataset2)
+print(len(combined_dataset))
+# Create a DataLoader
+dataloader = DataLoader(combined_dataset, batch_size=32, shuffle=True)
 
 
 

@@ -188,9 +188,6 @@ class Model(pl.LightningModule):
                 # print(i, j, distance)
                 neg_dists[j] = torch.exp(-distance)/self.T
                 neg_logits[j] = -distance/self.T
-                if i == j:
-                    pos_logit = -distance/self.T
-                    pos_dist = torch.exp(-distance)/self.T
             # the next line is correct because we want to minimize this function
             # breakpoint()
             ot_dist = 1-F.softmax(neg_logits, dim=0)[i]
