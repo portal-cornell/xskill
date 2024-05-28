@@ -207,13 +207,15 @@ class PairedRepDataset(torch.utils.data.Dataset):
         )
         vids = np.array(vids)
         vids_paired = np.array(vids_paired)
+        if self.vid_mask is not None:
+            vids = vids[self.vid_mask]
+            vids_paired = vids_paired[self.vid_mask]
+            
         vid_nums = np.arange(len(vids))
         np.random.shuffle(vid_nums)
         vid_nums = vid_nums[:int(self.percentage_pairing * len(vids))]
         vids, vids_paired = vids[vid_nums], vids_paired[vid_nums]
-        if self.vid_mask is not None:
-            vids = vids[self.vid_mask]
-            vids_paired = vids_paired[self.vid_mask]
+        
         self._dir_tree[path1] = vids
         self._dir_tree[path2] = vids_paired
         for j, v in enumerate(vids):
