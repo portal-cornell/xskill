@@ -16,6 +16,7 @@ from tqdm import tqdm
 import pandas as pd
 import seaborn as sns
 import cv2
+from xskill.utility.utils import read_json, write_json
 
 OBS_ELEMENT_INDICES = {
     "bottom burner": np.array([11, 12]),
@@ -85,15 +86,66 @@ def save_episode_frames(data_folder, start_idx, end_idx, episode_save_path):
         frame_path = os.path.join(data_folder, f"{frame_idx}.png")  # Assuming frames are in PNG format
         shutil.copy(frame_path, os.path.join(episode_folder, f"{i}.png"))  # Copy frame to episode folder with new index
 
+def get_segments(cfg, moved_obj, demo_type, data_folder):
+    segments = []
+    # Find start and end indices of each episode
+    episode_start = None
+    prev_segment_end = 0
+    current_episode_moved_obj = None
+    for idx, episode in enumerate(moved_obj):
+        if current_episode_moved_obj is None and np.any(episode):
+            current_episode_moved_obj = episode
+        if np.array_equal(episode, current_episode_moved_obj):
+            if episode_start is None:
+                episode_start = idx
+        elif episode_start is not None:
+            # End of episode
+            episode_end = idx - 1
+            episode_name = "_".join([obj for i, obj in enumerate(OBS_ELEMENT_INDICES.keys()) if moved_obj[episode_start][i]])
+            episode_save_path = os.path.join(cfg.data_path, demo_type + '_segments_paired_singlehand')
+            if (episode_end - episode_start) >= 10:
+                # save_episode_frames(data_folder, prev_segment_end if cfg.include_transition else episode_start, episode_end, episode_save_path)
+                segments.append({
+                                'data_folder': data_folder,
+                                'start_idx': prev_segment_end if cfg.include_transition else episode_start,
+                                'end_idx': episode_end,
+                                'episode_save_path': episode_save_path
+                            })
+            episode_start = None
+            prev_segment_end = episode_end + 1
+            current_episode_moved_obj = None
+
+    # Handle the case where the last episode extends until the end
+    if episode_start is not None:
+        episode_end = len(moved_obj) - 1
+        episode_name = "_".join([obj for i, obj in enumerate(OBS_ELEMENT_INDICES.keys()) if moved_obj[episode_start][i]])
+        episode_save_path = os.path.join(cfg.data_path, demo_type + '_segments_paired_singlehand')
+        if (episode_end - episode_start) >= 10:
+            # save_episode_frames(data_folder, prev_segment_end if cfg.include_transition else episode_start, episode_end, episode_save_path)
+            segments.append({
+                                'data_folder': data_folder,
+                                'start_idx': prev_segment_end if cfg.include_transition else episode_start,
+                                'end_idx': episode_end,
+                                'episode_save_path': episode_save_path
+                            })
+            
+    return segments
+
+
 @hydra.main(
     version_base=None,
     config_path="../config/simulation",
     config_name="label_sim_kitchen_dataset",
 )
 def label_dataset(cfg: DictConfig):
-    for demo_type in ["robot", "human"]:
+    with open(cfg.vid_mask, 'r') as f:
+        vid_mask = json.load(f)
+    segment_vid_mask = []
+    for demo_type in ["robot"]:
     # for demo_type in ["twohands", "human"]:
+        paired_type = "singlehand"
         data_path = os.path.join(cfg.data_path, demo_type)
+        paired_data_path = os.path.join(cfg.data_path, paired_type)
         all_folders = os.listdir(data_path)
         all_folders = sorted(all_folders, key=lambda x: int(x))
         for folder_path in tqdm(all_folders, disable=not cfg.verbose):
@@ -102,35 +154,32 @@ def label_dataset(cfg: DictConfig):
             state_arr = load_state_and_to_tensor(data_folder)
             moved_obj = detect_moving_objects_array(state_arr, OBS_ELEMENT_INDICES)
             moved_obj = np.array(moved_obj, dtype=np.int32)
-            
-            # Find start and end indices of each episode
-            episode_start = None
-            prev_segment_end = 0
-            current_episode_moved_obj = None
-            for idx, episode in enumerate(moved_obj):
-                if current_episode_moved_obj is None and np.any(episode):
-                    current_episode_moved_obj = episode
-                if np.array_equal(episode, current_episode_moved_obj):
-                    if episode_start is None:
-                        episode_start = idx
-                elif episode_start is not None:
-                    # End of episode
-                    episode_end = idx - 1
-                    episode_name = "_".join([obj for i, obj in enumerate(OBS_ELEMENT_INDICES.keys()) if moved_obj[episode_start][i]])
-                    episode_save_path = os.path.join(cfg.data_path, demo_type + '_segments', episode_name)
-                    if (episode_end - episode_start) >= 10:
-                        save_episode_frames(data_folder, prev_segment_end if cfg.include_transition else episode_start, episode_end, episode_save_path)
-                    episode_start = None
-                    prev_segment_end = episode_end + 1
-                    current_episode_moved_obj = None
+            robot_list = get_segments(cfg, moved_obj, demo_type, data_folder)
 
-            # Handle the case where the last episode extends until the end
-            if episode_start is not None:
-                episode_end = len(moved_obj) - 1
-                episode_name = "_".join([obj for i, obj in enumerate(OBS_ELEMENT_INDICES.keys()) if moved_obj[episode_start][i]])
-                episode_save_path = os.path.join(cfg.data_path, demo_type + '_segments', episode_name)
-                if (episode_end - episode_start) >= 10:
-                    save_episode_frames(data_folder, prev_segment_end if cfg.include_transition else episode_start, episode_end, episode_save_path)
+            paired_data_folder = os.path.join(paired_data_path, folder_path)
+            
+            state_arr = load_state_and_to_tensor(paired_data_folder)
+            moved_obj = detect_moving_objects_array(state_arr, OBS_ELEMENT_INDICES)
+            moved_obj = np.array(moved_obj, dtype=np.int32)
+
+            human_list = get_segments(cfg, moved_obj, paired_type, paired_data_folder)
+
+            num_segs = min(len(robot_list), len(human_list))
+            robot_list, human_list = robot_list[:num_segs], human_list[:num_segs]
+            for robot_dict, human_dict in zip(robot_list, human_list):
+                if vid_mask[int(folder_path)]:
+                    segment_vid_mask.append(True)
+                else:
+                    segment_vid_mask.append(False)
+                # save_episode_frames(**robot_dict)
+                # save_episode_frames(**human_dict)
+
+    write_json(
+        f"{cfg.base_dev_dir}/xskill/datasets/kitchen_dataset/robot_segments_paired_singlehand/train_mask.json",
+        segment_vid_mask,
+    )
+            
+            
 
 
 

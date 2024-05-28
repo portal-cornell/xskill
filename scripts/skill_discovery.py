@@ -5,7 +5,7 @@ from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning.callbacks import ModelCheckpoint, TQDMProgressBar
 import wandb
-from xskill.dataset.dataset import ConcatDataset
+from xskill.dataset.dataset import ConcatDataset, ConcatDatasetMax
 from xskill.utility.transform import get_transform_pipeline
 from lightning.pytorch import seed_everything
 
@@ -26,8 +26,11 @@ def pretrain(cfg: DictConfig):
 
     paired_dataset = hydra.utils.instantiate(cfg.paired_dataset)
 
-    
-    combine_dataset = ConcatDataset(robot_dataset, human_dataset, paired_dataset)
+    if cfg.use_max_dataset:
+        combine_dataset = ConcatDatasetMax(robot_dataset, human_dataset, paired_dataset)
+    else:
+        combine_dataset = ConcatDataset(robot_dataset, human_dataset, paired_dataset)
+        
     dataloader = torch.utils.data.DataLoader(
         combine_dataset,
         batch_size=cfg.batch_size,

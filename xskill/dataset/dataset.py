@@ -161,6 +161,7 @@ class PairedRepDataset(torch.utils.data.Dataset):
         vid_mask = None,
         max_get_threads = 4,
         resize_shape=[135, 135],
+        percentage_pairing=1,
     ) -> None:
         super().__init__()
         self._frame_sampler = frame_sampler
@@ -169,6 +170,7 @@ class PairedRepDataset(torch.utils.data.Dataset):
         self._seed = seed
         self.slide = slide
         self.sort_numerical = sort_numerical
+        self.percentage_pairing = percentage_pairing
         if vid_mask is not None:
             with open(vid_mask, 'r') as f:
                 self.vid_mask = json.load(f)
@@ -205,6 +207,10 @@ class PairedRepDataset(torch.utils.data.Dataset):
         )
         vids = np.array(vids)
         vids_paired = np.array(vids_paired)
+        vid_nums = np.arange(len(vids))
+        np.random.shuffle(vid_nums)
+        vid_nums = vid_nums[:int(self.percentage_pairing * len(vids))]
+        vids, vids_paired = vids[vid_nums], vids_paired[vid_nums]
         if self.vid_mask is not None:
             vids = vids[self.vid_mask]
             vids_paired = vids_paired[self.vid_mask]
@@ -317,6 +323,18 @@ class ConcatDataset(torch.utils.data.Dataset):
 
     def __len__(self):
         return min(len(d) for d in self.datasets)
+
+class ConcatDatasetMax(torch.utils.data.Dataset):
+    def __init__(self, *datasets):
+        self.datasets = datasets
+        self.max_len = max(len(d) for d in self.datasets)
+
+    def __getitem__(self, i):
+        return tuple(d[i % len(d)] for d in self.datasets)
+
+    def __len__(self):
+        return self.max_len
+
 
 # consider changing to this
 # class ConcatDataset(torch.utils.data.Dataset):

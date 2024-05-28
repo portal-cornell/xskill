@@ -13,5 +13,6 @@ device: 'cuda:0'
 plot_top_k: null
 verbose: True
 include_transition: True
+vid_mask: '${base_dev_dir}/xskill/datasets/kitchen_dataset/train_mask.json'
 
 batch_size: 28

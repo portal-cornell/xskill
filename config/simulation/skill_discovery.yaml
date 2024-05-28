@@ -12,6 +12,7 @@ pin_memory: False
 persistent_workers: True
 drop_last: True
 cross_embodiment: human
+use_max_dataset: True
 
 resize_shape: [124,124]
 max_get_threads: 24
@@ -48,18 +49,19 @@ human_dataset:
 paired_dataset:
   _target_: xskill.dataset.dataset.PairedRepDataset
   _allowed_dirs: [
-    '${base_dev_dir}/xskill/datasets/kitchen_dataset/robot',
-    '${base_dev_dir}/xskill/datasets/kitchen_dataset/${cross_embodiment}',
+    '${base_dev_dir}/xskill/datasets/kitchen_dataset/robot_segments_paired',
+    '${base_dev_dir}/xskill/datasets/kitchen_dataset/human_segments_paired',
   ]
-  vid_mask: ${robot_dataset.vid_mask}
+  vid_mask: null
   frame_sampler:
     _target_: xskill.dataset.frame_samplers.UniformDownSampleSampler
     offset: ${robot_dataset.frame_sampler.offset}
-    num_frames: ${robot_dataset.frame_sampler.num_frames}
+    num_frames: 30
     downsample_ratio: ${robot_dataset.frame_sampler.downsample_ratio}
   slide: ${robot_dataset.slide}
   resize_shape: ${resize_shape}
   max_get_threads: ${max_get_threads}
+  percentage_pairing: 1
 
 
 augmentations: ['random_crop_112_112','color_jitter','grayscale','gaussian_blur','normalize']
