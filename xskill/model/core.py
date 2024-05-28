@@ -38,7 +38,8 @@ class Model(pl.LightningModule):
         use_tcc_loss=False,
         use_opt_loss=True,
         tcc_coef=1,
-        ot_coef=1
+        ot_coef=1,
+        unsupervised_training=True,
     ):
         super(Model, self).__init__()
 
@@ -82,6 +83,7 @@ class Model(pl.LightningModule):
         self.tcc_coef = tcc_coef
         self.ot_loss_log = 0
         self.ot_coef = ot_coef
+        self.unsupervised_training = unsupervised_training
 
     # @profile
     def forward(self, im_q, bbox_q, im_k=None, bbox_k=None, no_proj=False):
@@ -178,23 +180,15 @@ class Model(pl.LightningModule):
         return C
     
     def compute_optimal_transport_loss(self, zc_r, zc_h, eps = 1e-10):
-        dist = self.batch_cosine_distance(zc_r, zc_h)
         total_loss = 0
-        ct = time.time()
         for i in range(zc_r.shape[0]):
-            # neg_dists = torch.zeros(zc_r.shape[0])
             neg_logits = torch.zeros(zc_r.shape[0])
             for j in range(zc_r.shape[0]):
-                # breakpoint()
                 cosin_dists = self.batch_cosine_distance(zc_r[i].unsqueeze(0), zc_h[j].unsqueeze(0))
-                assignment = self.distributed_sinkhorn(cosin_dists[0])
+                assignment = self.distributed_sinkhorn(-cosin_dists[0])
                 distance = torch.sum(assignment * cosin_dists[0])
-                # print(i, j, distance)
-                # neg_dists[j] = torch.exp(-distance)/self.T
                 neg_logits[j] = -distance/self.T
-            # the next line is correct because we want to minimize this function
             ot_dist = 1-F.softmax(neg_logits, dim=0)[i]
-            # ot_dist = (1-pos_dist/(torch.sum(neg_dists)+eps))
             if torch.isnan(ot_dist):
                 print("Nan value in ot loss")
                 breakpoint()
@@ -206,8 +200,9 @@ class Model(pl.LightningModule):
         robot_batch, human_batch, paired_batch = batch
         paired_robot_batch, paired_human_batch = paired_batch
         self.paired_training_step(paired_robot_batch, paired_human_batch, batch_idx)
-        self.training_step_helper(robot_batch, batch_idx)
-        self.training_step_helper(human_batch, batch_idx)
+        if self.unsupervised_training:
+            self.training_step_helper(robot_batch, batch_idx)
+            self.training_step_helper(human_batch, batch_idx)
         print("Total time during one batch = ", time.time() - start_time)
 
     # @profile
@@ -250,6 +245,13 @@ class Model(pl.LightningModule):
             rep_loss = rep_loss + (self.ot_coef * self.ot_loss_log)
         rep_loss.backward()
         self.paired_optimizer.step()
+        with torch.no_grad():
+            wandb.log({
+                    'tcc_loss':
+                    self.tcc_loss_log,
+                    'ot_loss':
+                    self.ot_loss_log
+                })
 
     # @profile
     def training_step_helper(self, batch, batch_idx):
@@ -435,10 +437,6 @@ class Model(pl.LightningModule):
                 s_sch.get_lr()[0] if self.use_lr_scheduler else self.lr,
                 'T':
                 self.T,
-                'tcc_loss':
-                self.tcc_loss_log,
-                'ot_loss':
-                self.ot_loss_log
             })
 
     # @profile
