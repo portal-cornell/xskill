@@ -173,23 +173,32 @@ class Model(pl.LightningModule):
         C = (1 - C / norms)
         return C
     
-    def compute_optimal_transport_loss(self, zc_r, zc_h):
+    def compute_optimal_transport_loss(self, zc_r, zc_h, eps = 1e-10):
         dist = self.batch_cosine_distance(zc_r, zc_h)
         total_loss = 0
         ct = time.time()
         for i in range(zc_r.shape[0]):
             neg_dists = torch.zeros(zc_r.shape[0])
+            neg_logits = torch.zeros(zc_r.shape[0])
             for j in range(zc_r.shape[0]):
                 # breakpoint()
                 cosin_dists = self.batch_cosine_distance(zc_r[i].unsqueeze(0), zc_h[j].unsqueeze(0))
                 assignment = self.distributed_sinkhorn(cosin_dists[0])
                 distance = torch.sum(assignment * cosin_dists[0])
                 # print(i, j, distance)
-                neg_dists[j] = torch.exp(-distance)
+                neg_dists[j] = torch.exp(-distance)/self.T
+                neg_logits[j] = -distance/self.T
                 if i == j:
-                    pos_dist = torch.exp(-distance)
+                    pos_logit = -distance/self.T
+                    pos_dist = torch.exp(-distance)/self.T
             # the next line is correct because we want to minimize this function
-            total_loss += (1-pos_dist/torch.sum(neg_dists))
+            # breakpoint()
+            ot_dist = 1-F.softmax(neg_logits, dim=0)[i]
+            # ot_dist = (1-pos_dist/(torch.sum(neg_dists)+eps))
+            if torch.isnan(ot_dist):
+                print("Nan value in ot loss")
+                breakpoint()
+            total_loss += ot_dist
         return total_loss
     
     def training_step(self, batch, batch_idx):
