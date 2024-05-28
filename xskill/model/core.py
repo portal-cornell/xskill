@@ -36,7 +36,9 @@ class Model(pl.LightningModule):
         pretrain_pipeline=None,
         paired_dataloader=None,
         use_tcc_loss=False,
-        use_opt_loss=True
+        use_opt_loss=True,
+        tcc_coef=1,
+        ot_coef=1
     ):
         super(Model, self).__init__()
 
@@ -77,7 +79,9 @@ class Model(pl.LightningModule):
         self.use_tcc_loss = use_tcc_loss
         self.use_opt_loss = use_opt_loss
         self.tcc_loss_log = 0
+        self.tcc_coef = tcc_coef
         self.ot_loss_log = 0
+        self.ot_coef = ot_coef
 
     # @profile
     def forward(self, im_q, bbox_q, im_k=None, bbox_k=None, no_proj=False):
@@ -150,10 +154,10 @@ class Model(pl.LightningModule):
     def tcc_loss_(self, emb1, emb2):
         """Compute the TCC loss between a pair of sequences."""
         similarity = -torch.cdist(emb1, emb2, p=2)/self.T
-        beta = F.softmax(similarity, dim=0)
+        beta = F.softmax(similarity, dim=-1)
         half_cycle = torch.bmm(beta, emb2)
         similarity = -torch.cdist(half_cycle, emb1, p=2)/self.T
-        beta = F.softmax(similarity, dim=0)
+        beta = F.softmax(similarity, dim=-1)
         cycle_back = torch.bmm(beta, emb1)
         return F.mse_loss(cycle_back, emb1)
     
@@ -178,7 +182,7 @@ class Model(pl.LightningModule):
         total_loss = 0
         ct = time.time()
         for i in range(zc_r.shape[0]):
-            neg_dists = torch.zeros(zc_r.shape[0])
+            # neg_dists = torch.zeros(zc_r.shape[0])
             neg_logits = torch.zeros(zc_r.shape[0])
             for j in range(zc_r.shape[0]):
                 # breakpoint()
@@ -186,10 +190,9 @@ class Model(pl.LightningModule):
                 assignment = self.distributed_sinkhorn(cosin_dists[0])
                 distance = torch.sum(assignment * cosin_dists[0])
                 # print(i, j, distance)
-                neg_dists[j] = torch.exp(-distance)/self.T
+                # neg_dists[j] = torch.exp(-distance)/self.T
                 neg_logits[j] = -distance/self.T
             # the next line is correct because we want to minimize this function
-            # breakpoint()
             ot_dist = 1-F.softmax(neg_logits, dim=0)[i]
             # ot_dist = (1-pos_dist/(torch.sum(neg_dists)+eps))
             if torch.isnan(ot_dist):
@@ -227,7 +230,6 @@ class Model(pl.LightningModule):
             ])  # (b,slide+1,c,h,w)
             human_batch_clips.append(im_h)
             
-        # breakpoint()
         robot_batch_clips = torch.cat(robot_batch_clips, dim=0)
         human_batch_clips = torch.cat(human_batch_clips, dim=0)
 
@@ -243,9 +245,9 @@ class Model(pl.LightningModule):
         self.tcc_loss_log = self.compute_tcc_loss(zc_r, zc_h)
         self.ot_loss_log = self.compute_optimal_transport_loss(zc_r, zc_h)/batch_size
         if self.use_tcc_loss:
-            rep_loss = rep_loss + self.tcc_loss_log
+            rep_loss = rep_loss + (self.tcc_coef * self.tcc_loss_log)
         if self.use_opt_loss:
-            rep_loss = rep_loss + self.ot_loss_log
+            rep_loss = rep_loss + (self.ot_coef * self.ot_loss_log)
         rep_loss.backward()
         self.paired_optimizer.step()
 

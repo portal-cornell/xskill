@@ -100,6 +100,8 @@ Model:
   negative_window: 12
   use_tcc_loss: False
   use_opt_loss: False
+  tcc_coef: 1
+  ot_coef: 1
 
   skill_prior: 
     _target_: xskill.model.encoder.VisualMotionPrior
@@ -148,7 +150,7 @@ Model:
 
 
 callback:
-  every_n_epoch: 5
+  every_n_epoch: 1
 
 
 

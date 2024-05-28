@@ -7,6 +7,8 @@ import json
 from omegaconf import DictConfig
 import hydra
 import omegaconf
+import torch.nn.functional as F
+
 
 def load_images(folder_path, resize_shape=None):
     images = []  # initialize an empty list to store the images
@@ -58,7 +60,7 @@ def load_model(cfg):
     exp_cfg = omegaconf.OmegaConf.load(os.path.join(cfg.exp_path, ".hydra/config.yaml"))
     model = hydra.utils.instantiate(exp_cfg.Model).to(cfg.device)
 
-    loadpath = os.path.join(cfg.exp_path, f"epoch={cfg.ckpt}.ckpt")
+    loadpath = os.path.join(cfg.exp_path, f"epoch={cfg.ckpt if len(str(cfg.ckpt)) > 1 else ('0'+str(cfg.ckpt))}.ckpt")
     checkpoint = torch.load(loadpath, map_location=cfg.device)
 
     model.load_state_dict(checkpoint["state_dict"])
@@ -162,7 +164,7 @@ def traj_representations(cfg, model, pipeline, demo_type, ep_num, frame_list=Non
             for j in range(eps_len - model.slide)
         ]
     )  # (B,slide+1,C,H,W)
-
+    
     clips = im_q
     if frame_list is not None:
         clips = clips[frame_list]
@@ -172,3 +174,18 @@ def traj_representations(cfg, model, pipeline, demo_type, ep_num, frame_list=Non
     traj_rep = model.encoder_q.get_traj_representation(state_rep) # (T, D)
     traj_rep = repeat_last_proto(traj_rep, eps_len)
     return traj_rep, z
+
+def tcc_loss_(emb1, emb2):
+    """Compute the TCC loss between a pair of sequences."""
+    similarity = -torch.cdist(emb1, emb2, p=2)/0.1
+    beta = F.softmax(similarity, dim=-1)
+    half_cycle = torch.bmm(beta, emb2)
+    similarity = -torch.cdist(half_cycle, emb1, p=2)/0.1
+    beta = F.softmax(similarity, dim=-1)
+    cycle_back = torch.bmm(beta, emb1)
+    return F.mse_loss(cycle_back, emb1)
+
+def compute_tcc_loss(zc_r, zc_h):
+    robot_cycle_back_loss = tcc_loss_(zc_r, zc_h)
+    human_cycle_back_loss = tcc_loss_(zc_h, zc_r)
+    return robot_cycle_back_loss + human_cycle_back_loss
