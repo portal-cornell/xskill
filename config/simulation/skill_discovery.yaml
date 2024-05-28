@@ -7,7 +7,7 @@ hydra:
 
 seed: 45
 batch_size: 28
-num_workers: 4
+num_workers: 1
 pin_memory: False
 persistent_workers: True
 drop_last: True

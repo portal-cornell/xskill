@@ -177,26 +177,29 @@ class Model(pl.LightningModule):
         dist = self.batch_cosine_distance(zc_r, zc_h)
         total_loss = 0
         ct = time.time()
-        for i in range(dist.shape[0]):
-            neg_dists = torch.zeros(dist.shape[0])
-            for j in range(dist.shape[0]):
+        for i in range(zc_r.shape[0]):
+            neg_dists = torch.zeros(zc_r.shape[0])
+            for j in range(zc_r.shape[0]):
+                # breakpoint()
                 cosin_dists = self.batch_cosine_distance(zc_r[i].unsqueeze(0), zc_h[j].unsqueeze(0))
                 assignment = self.distributed_sinkhorn(cosin_dists[0])
                 distance = torch.sum(assignment * cosin_dists[0])
+                # print(i, j, distance)
                 neg_dists[j] = torch.exp(-distance)
                 if i == j:
                     pos_dist = torch.exp(-distance)
-            total_loss += pos_dist/torch.sum(neg_dists)
-        print("Time taken for OT calculcation = ", time.time() - ct)
-        # breakpoint()
+            # the next line is correct because we want to minimize this function
+            total_loss += (1-pos_dist/torch.sum(neg_dists))
         return total_loss
     
     def training_step(self, batch, batch_idx):
+        start_time = time.time()
         robot_batch, human_batch, paired_batch = batch
         paired_robot_batch, paired_human_batch = paired_batch
         self.paired_training_step(paired_robot_batch, paired_human_batch, batch_idx)
         self.training_step_helper(robot_batch, batch_idx)
         self.training_step_helper(human_batch, batch_idx)
+        print("Total time during one batch = ", time.time() - start_time)
 
     # @profile
     def paired_training_step(self, robot_batch, human_batch, batch_idx):
@@ -239,7 +242,7 @@ class Model(pl.LightningModule):
             rep_loss = rep_loss + self.ot_loss_log
         rep_loss.backward()
         self.paired_optimizer.step()
-        
+
     # @profile
     def training_step_helper(self, batch, batch_idx):
         e_opt, s_opt = self.optimizers()
@@ -247,7 +250,6 @@ class Model(pl.LightningModule):
         batch_size = eps_im.shape[0]
 
         # normalize the prototypes
-        start_time = time.time()
         with torch.no_grad():
             w = self.encoder_q.prototypes.weight.data.clone()
             w = nn.functional.normalize(w, dim=1, p=2)
@@ -299,8 +301,6 @@ class Model(pl.LightningModule):
                                   bbox_q=None,
                                   im_k=swav_batch_im_k,
                                   bbox_k=None)
-        end_of_forward_time = time.time()
-        print("Forward Step time in XSKILL batch = ", end_of_forward_time - start_time)
         if self.reverse_augment:
             chunk_zc_q, chunk_zc_k = torch.chunk(zc_q,
                                                  2 * batch_size), torch.chunk(
