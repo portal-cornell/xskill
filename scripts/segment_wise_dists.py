@@ -16,7 +16,7 @@ from tqdm import tqdm
 import pandas as pd
 import seaborn as sns
 import cv2
-from xskill.utility.eval_utils import traj_representations, load_model, compute_tcc_loss
+from xskill.utility.eval_utils import traj_representations, load_model, compute_tcc_loss, compute_optimal_transport_loss
 
 def list_digit_folders(directory):
     # List all items in the directory
@@ -79,14 +79,18 @@ def main(cfg: DictConfig):
         )
         os.makedirs(save_folder, exist_ok=True)
         tcc_dist_matrix = []
+        ot_dist_matrix = []
         with torch.no_grad():
             traj_representation, _ = traj_representations(cfg, model, pipeline, 'robot_segments_paired', int(folder_path))
-            # Compute TCC loss between traj_representation and each of the traj_reprentation tensors in human_vid_to_traj (assuming access to a compute_tcc_loss(zc_r, zc_h) function)
-            # save the TCC loss matrix such that each entry i is defined to be the negative TCC loss between the robot traj_representation and the tensor at human_vid_to_traj[i]
             for human_traj_representation in human_vid_to_traj:
                 tcc_dist_matrix.append(compute_tcc_loss(traj_representation.unsqueeze(0), human_traj_representation.unsqueeze(0)).item())
+                ot_dists = compute_optimal_transport_loss(traj_representation.unsqueeze(0), human_traj_representation.unsqueeze(0))
+                ot_dist_matrix.append(ot_dists[0][0].item())
+                
         with open(os.path.join(save_folder, 'tcc_dists.json'), 'w') as f:
             json.dump(tcc_dist_matrix, f)
+        with open(os.path.join(save_folder, 'ot_dists.json'), 'w') as f:
+            json.dump(ot_dist_matrix, f)
     
 
 

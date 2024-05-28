@@ -183,9 +183,9 @@ class Model(pl.LightningModule):
         total_loss = 0
         for i in range(zc_r.shape[0]):
             neg_logits = torch.zeros(zc_r.shape[0])
-            for j in range(zc_r.shape[0]):
+            for j in range(zc_h.shape[0]):
                 cosin_dists = self.batch_cosine_distance(zc_r[i].unsqueeze(0), zc_h[j].unsqueeze(0))
-                assignment = self.distributed_sinkhorn(-cosin_dists[0])
+                assignment = self.distributed_sinkhorn(1-cosin_dists[0])
                 distance = torch.sum(assignment * cosin_dists[0])
                 neg_logits[j] = -distance/self.T
             ot_dist = 1-F.softmax(neg_logits, dim=0)[i]

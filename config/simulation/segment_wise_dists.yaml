@@ -2,10 +2,10 @@ base_dev_dir: '/share/portal/pd337'
 
 resize_shape: [124,124]
 data_path: ${base_dev_dir}/xskill/datasets/kitchen_dataset
-exp_path: '${base_dev_dir}/xskill/experiment/pretrain/ot_pairing_xskill_2024-05-28_11-48-01'
-# exp_path: '${base_dev_dir}/xskill/experiment/pretrain/orig_batch'
+# exp_path: '${base_dev_dir}/xskill/experiment/pretrain/ot_pairing_xskill_2024-05-28_11-48-01'
+exp_path: '${base_dev_dir}/xskill/experiment/pretrain/orig_batch'
 
-ckpt: 4
+ckpt: 79
 human_type: 'human_segments_paired'
 device: 'cuda:0'
 verbose: True
