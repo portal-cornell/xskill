@@ -16,4 +16,4 @@ frame_sampler:
   num_frames: 30
   downsample_ratio: 1
 
-num_chop: 4
+num_chops: 4
