@@ -134,13 +134,18 @@ class KitchenBCDataset(torch.utils.data.Dataset):
         paired_proto_dirs=None,
         paired_demo_img_path=None,
         nearest_neighbor_replacement=False,
+        tcc_replacement=False,
+        ot_replacement=False,
         replace_percent=0,
         nearest_neighbor_data_dirs=None,
         save_lookups=False,
+        paired_mask=None,
+        num_chops=4,
     ):
         """
         Support 1) raw representation 2) softmax prototype 3) prototype 4) one-hot prototype
         """
+        breakpoint()
         self.verbose = verbose
         self.resize_shape = resize_shape
         if mask is not None:
@@ -148,6 +153,12 @@ class KitchenBCDataset(torch.utils.data.Dataset):
                 self.mask = json.load(f)
         else:
             self.mask = None
+
+        if paired_mask is not None:
+            with open(paired_mask, "r") as f:
+                self.paired_mask = json.load(f)
+        else:
+            self.paired_mask = None
 
         self.seed = seed
         self.set_seed(self.seed)
@@ -166,9 +177,12 @@ class KitchenBCDataset(torch.utils.data.Dataset):
         self.paired_proto_dirs = paired_proto_dirs
         self.paired_demo_img_path = paired_demo_img_path
         self.nearest_neighbor_replacement = nearest_neighbor_replacement
+        self.tcc_replacement = tcc_replacement
+        self.ot_replacement = ot_replacement
         self.replace_percent = replace_percent
         self.nearest_neighbor_data_dirs = nearest_neighbor_data_dirs
         self.save_lookups = save_lookups
+        self.num_chops = 4
 
         self.data_dirs = data_dirs
         self.proto_dirs = proto_dirs
@@ -297,7 +311,7 @@ class KitchenBCDataset(torch.utils.data.Dataset):
 
         return np.array(episode_numbers).astype(np.int32), np.array(frames).astype(np.int32)
 
-    def load_proto_and_to_tensor(self, vid, is_paired=False, is_lookup=False):
+    def load_proto_and_to_tensor(self, vid, is_paired=False, is_lookup=False, tcc_lookup=False, ot_lookup=False):
         proto_path = osp.join(self.proto_dirs, os.path.basename(os.path.normpath(vid)))
 
         def add_representation_suffix(path):
@@ -327,7 +341,90 @@ class KitchenBCDataset(torch.utils.data.Dataset):
                 with open(human_proto_path, "r") as f:
                     human_proto_data = json.load(f)
                 human_proto_data = np.array(human_proto_data, dtype=np.float32) # (T,D)
-                cur_proto_data = human_proto_data                
+                cur_proto_data = human_proto_data   
+
+            if ot_lookup: 
+                breakpoint()
+                ot_dist_path = osp.join(self.nearest_neighbor_data_dirs, os.path.basename(os.path.normpath(vid)))
+                z_tilde = []
+                cfg = DictConfig({'data_path': self.paired_demo_img_path, 'resize_shape': [124,124]})
+                reconstructed_video = []
+                orig_video = []
+                robot_vid_num = int(os.path.basename(os.path.normpath(vid)))
+                for j in range(self.num_chops):
+                    ot_dist_subpath = os.path.join(ot_dist_path, str(j), 'ot_dists.json')
+                    with open(ot_dist_subpath, "r") as f:
+                        ot_dist_data = json.load(f)
+                    ot_dist_data = np.array(ot_dist_data, dtype=np.float32)
+                    # if self.paired_mask:
+                    #     ot_dist_data[self.paired_mask] = float('inf')
+                    human_segment_idx = np.argmin(ot_dist_data)
+                    
+                    human_proto_path = osp.join(self.paired_proto_dirs, str(human_segment_idx))
+                    human_proto_path = add_representation_suffix(human_proto_path)
+                    with open(human_proto_path, "r") as f:
+                        human_proto_data = json.load(f)
+                    z_tilde.extend(human_proto_data)
+                    
+                    if self.save_lookups:
+                        human_imgs = gif_of_clip(cfg, self.human_type, human_segment_idx, 0, 8, None, save=False, full_clip=True)
+                        reconstructed_video.extend(human_imgs)
+
+                if self.save_lookups:
+                    robot_imgs = gif_of_clip(cfg, 'robot', robot_vid_num, 0, 8, None, save=False, full_clip=True)
+                    orig_video.extend(robot_imgs)
+                    reconstructed_video[0].save(os.path.join(self.nearest_neighbor_data_dirs, str(robot_vid_num), f'constructed_human_ot.gif'), save_all=True, append_images=reconstructed_video[1:], duration=100, loop=0)
+                    orig_video[0].save(os.path.join(self.nearest_neighbor_data_dirs, str(robot_vid_num), f'orig_robot.gif'), save_all=True, append_images=orig_video[1:], duration=100, loop=0)
+                
+                z_tilde = np.array(z_tilde, dtype=np.float32)
+                snap_idx = random.sample(list(range(len(z_tilde))), k=self.snap_frames)
+                snap_idx.sort()
+                snap = z_tilde[snap_idx]
+                snap = snap.flatten()
+                # TODO: fix the number of times its tiled
+                snap = np.tile(snap, (len(cur_proto_data), 1))  # (T,snap_frams*model_dim)
+                return proto_data, snap
+
+            if tcc_lookup: 
+                tcc_dist_path = osp.join(self.nearest_neighbor_data_dirs, os.path.basename(os.path.normpath(vid)))
+                z_tilde = []
+                cfg = DictConfig({'data_path': self.paired_demo_img_path, 'resize_shape': [124,124]})
+                reconstructed_video = []
+                orig_video = []
+                robot_vid_num = int(os.path.basename(os.path.normpath(vid)))
+                for j in range(self.num_chops):
+                    tcc_dist_subpath = os.path.join(tcc_dist_path, str(j), 'tcc_dists.json')
+                    with open(tcc_dist_subpath, "r") as f:
+                        tcc_dist_data = json.load(f)
+                    tcc_dist_data = np.array(tcc_dist_data, dtype=np.float32)
+                    # if self.paired_mask:
+                    #     tcc_dist_data[self.paired_mask] = float('inf')
+                    human_segment_idx = np.argmin(tcc_dist_data)
+                    
+                    human_proto_path = osp.join(self.paired_proto_dirs, str(human_segment_idx))
+                    human_proto_path = add_representation_suffix(human_proto_path)
+                    with open(human_proto_path, "r") as f:
+                        human_proto_data = json.load(f)
+                    z_tilde.extend(human_proto_data)
+                    
+                    if self.save_lookups:
+                        human_imgs = gif_of_clip(cfg, self.human_type, human_segment_idx, 0, 8, None, save=False, full_clip=True)
+                        reconstructed_video.extend(human_imgs)
+
+                if self.save_lookups:
+                    robot_imgs = gif_of_clip(cfg, 'robot', robot_vid_num, 0, 8, None, save=False, full_clip=True)
+                    orig_video.extend(robot_imgs)
+                    reconstructed_video[0].save(os.path.join(self.nearest_neighbor_data_dirs, str(robot_vid_num), f'constructed_human_tcc.gif'), save_all=True, append_images=reconstructed_video[1:], duration=100, loop=0)
+                    orig_video[0].save(os.path.join(self.nearest_neighbor_data_dirs, str(robot_vid_num), f'orig_robot.gif'), save_all=True, append_images=orig_video[1:], duration=100, loop=0)
+                
+                z_tilde = np.array(z_tilde, dtype=np.float32)
+                snap_idx = random.sample(list(range(len(z_tilde))), k=self.snap_frames)
+                snap_idx.sort()
+                snap = z_tilde[snap_idx]
+                snap = snap.flatten()
+                # TODO: fix the number of times its tiled
+                snap = np.tile(snap, (len(cur_proto_data), 1))  # (T,snap_frams*model_dim)
+                return proto_data, snap
 
             if is_lookup: # does nearest neighbor replacement on the robot sequence of z's
                 l2_dist_path = osp.join(self.nearest_neighbor_data_dirs, os.path.basename(os.path.normpath(vid)))
@@ -366,8 +463,8 @@ class KitchenBCDataset(torch.utils.data.Dataset):
                         orig_video.extend(robot_imgs)
 
                 if self.save_lookups:
-                    reconstructed_video[0].save(os.path.join(self.nearest_neighbor_data_dirs, str(robot_vid_num), f'constructed_human.gif'), save_all=True, append_images=reconstructed_video[1:], duration=200, loop=0)
-                    orig_video[0].save(os.path.join(self.nearest_neighbor_data_dirs, str(robot_vid_num), f'orig_robot.gif'), save_all=True, append_images=orig_video[1:], duration=200, loop=0)
+                    reconstructed_video[0].save(os.path.join(self.nearest_neighbor_data_dirs, str(robot_vid_num), f'constructed_human.gif'), save_all=True, append_images=reconstructed_video[1:], duration=100, loop=0)
+                    orig_video[0].save(os.path.join(self.nearest_neighbor_data_dirs, str(robot_vid_num), f'orig_robot.gif'), save_all=True, append_images=orig_video[1:], duration=100, loop=0)
                 
                 snap = np.array(z_tilde, dtype=np.float32)
                 snap = snap.flatten()
@@ -432,6 +529,18 @@ class KitchenBCDataset(torch.utils.data.Dataset):
             vid_nums = np.array(vid)
             np.random.shuffle(vid_nums)
             lookup_set.update(vid_nums[:int(len(vid) * self.replace_percent)])
+
+        tcc_set = set()
+        if self.tcc_replacement:
+            vid_nums = np.array(vid)
+            np.random.shuffle(vid_nums)
+            tcc_set.update(vid_nums[:int(len(vid) * self.replace_percent)])
+
+        ot_set = set()
+        if self.ot_replacement:
+            vid_nums = np.array(vid)
+            np.random.shuffle(vid_nums)
+            ot_set.update(vid_nums[:int(len(vid) * self.replace_percent)])
         
         for j, v in tqdm(enumerate(vid), desc="Loading data", disable=not self.verbose):
             if self.obs_image_based:
@@ -440,7 +549,7 @@ class KitchenBCDataset(torch.utils.data.Dataset):
 
             train_data["obs"].append(self.load_state_and_to_tensor(v))
             if self.prototype_snap:
-                proto_data, proto_snap = self.load_proto_and_to_tensor(v, is_paired=(v in paired_set), is_lookup=(v in lookup_set))
+                proto_data, proto_snap = self.load_proto_and_to_tensor(v, is_paired=(v in paired_set), is_lookup=(v in lookup_set), tcc_lookup=(v in tcc_set), ot_lookup=(v in ot_set))
                 train_data["proto_snap"].append(proto_snap)
             else:
                 proto_data = self.load_proto_and_to_tensor(v)

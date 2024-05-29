@@ -50,10 +50,10 @@ human_dataset:
 paired_dataset:
   _target_: xskill.dataset.dataset.PairedRepDataset
   _allowed_dirs: [
-    '${base_dev_dir}/xskill/datasets/kitchen_dataset/robot_segments_paired_twohands',
-    '${base_dev_dir}/xskill/datasets/kitchen_dataset/twohands_segments_paired_twohands',
+    '${base_dev_dir}/xskill/datasets/kitchen_dataset/robot_segments_paired',
+    '${base_dev_dir}/xskill/datasets/kitchen_dataset/human_segments_paired',
   ]
-  vid_mask: '${base_dev_dir}/xskill/datasets/kitchen_dataset/robot_segments_paired_twohands/train_mask.json'
+  vid_mask: '${base_dev_dir}/xskill/datasets/kitchen_dataset/robot_segments_paired/train_mask.json'
   frame_sampler:
     _target_: xskill.dataset.frame_samplers.UniformDownSampleSampler
     offset: ${robot_dataset.frame_sampler.offset}

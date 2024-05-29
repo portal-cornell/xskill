@@ -6,9 +6,9 @@ hydra:
 
 resize_shape: [124,124]
 data_path: ${base_dev_dir}/xskill/datasets/kitchen_dataset
-exp_path: '${base_dev_dir}/xskill/experiment/pretrain/none_simultaneous_new'
+exp_path: '${base_dev_dir}/xskill/experiment/pretrain/orig_batch'
 ckpt: 79
-human_type: 'none_simultaneous'
+human_type: 'human_segments_paired_sample'
 device: 'cuda:0'
 plot_top_k: null
 verbose: True

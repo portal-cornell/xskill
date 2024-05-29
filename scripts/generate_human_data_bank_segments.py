@@ -139,7 +139,7 @@ def main(cfg: DictConfig):
     
     all_human_zs = torch.Tensor(all_human_zs).cuda()
 
-    data_path = os.path.join(cfg.data_path, 'robot_segments_paired')
+    data_path = os.path.join(cfg.data_path, 'robot')
     all_folders = os.listdir(data_path)
     all_folders = list_digit_folders(data_path)
     all_folders = sorted(all_folders, key=lambda x: int(x))
@@ -149,7 +149,7 @@ def main(cfg: DictConfig):
         )
         os.makedirs(save_folder, exist_ok=True)
 
-        traj_representation, _ = traj_representations(cfg, model, pipeline, 'robot_segments_paired', int(folder_path))
+        traj_representation, _ = traj_representations(cfg, model, pipeline, 'robot', int(folder_path))
 
         l2_dists = torch.cdist(traj_representation, all_human_zs, p=2)
         l2_dists = l2_dists.detach().cpu().numpy()
