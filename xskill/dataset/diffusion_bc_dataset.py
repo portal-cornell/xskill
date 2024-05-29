@@ -145,7 +145,6 @@ class KitchenBCDataset(torch.utils.data.Dataset):
         """
         Support 1) raw representation 2) softmax prototype 3) prototype 4) one-hot prototype
         """
-        breakpoint()
         self.verbose = verbose
         self.resize_shape = resize_shape
         if mask is not None:
@@ -542,7 +541,7 @@ class KitchenBCDataset(torch.utils.data.Dataset):
             np.random.shuffle(vid_nums)
             ot_set.update(vid_nums[:int(len(vid) * self.replace_percent)])
         
-        for j, v in tqdm(enumerate(vid), desc="Loading data", disable=not self.verbose):
+        for j, v in tqdm(enumerate(vid[:5]), desc="Loading data", disable=not self.verbose):
             if self.obs_image_based:
                 images = self.load_images(v)
                 train_data["images"].append(images)
