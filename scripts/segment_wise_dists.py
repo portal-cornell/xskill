@@ -63,9 +63,14 @@ def main(cfg: DictConfig):
     all_folders = list_digit_folders(data_path)
     all_folders = sorted(all_folders, key=lambda x: int(x))
     human_vid_to_traj = []
-    for folder_path in tqdm(all_folders[:3], disable=not cfg.verbose):
+    for folder_path in tqdm(all_folders, disable=not cfg.verbose):
         with torch.no_grad():
             traj_representation, _ = traj_representations(cfg, model, pipeline, cfg.human_type, int(folder_path))
+        import random
+        eps_len = traj_representation.shape[0]
+        snap_idx = random.sample(list(range(eps_len)), k=30)
+        snap_idx.sort()
+        traj_representation = traj_representation[snap_idx]
         
         human_vid_to_traj.append(traj_representation)
     
@@ -73,7 +78,7 @@ def main(cfg: DictConfig):
     data_path = os.path.join(cfg.data_path, 'robot_segments_paired')
     all_folders = list_digit_folders(data_path)
     all_folders = sorted(all_folders, key=lambda x: int(x))
-    for folder_path in tqdm(all_folders[:3], disable=not cfg.verbose):
+    for folder_path in tqdm(all_folders, disable=not cfg.verbose):
         save_folder = os.path.join(
             cfg.exp_path, f"{cfg.human_type}_l2", f"ckpt_{cfg.ckpt}", folder_path
         )
@@ -82,11 +87,16 @@ def main(cfg: DictConfig):
         ot_dist_matrix = []
         with torch.no_grad():
             traj_representation, _ = traj_representations(cfg, model, pipeline, 'robot_segments_paired', int(folder_path))
+            import random
+            eps_len = traj_representation.shape[0]
+            snap_idx = random.sample(list(range(eps_len)), k=30)
+            snap_idx.sort()
+            traj_representation = traj_representation[snap_idx]
             for human_traj_representation in human_vid_to_traj:
                 tcc_dist_matrix.append(compute_tcc_loss(traj_representation.unsqueeze(0), human_traj_representation.unsqueeze(0)).item())
                 ot_dists = compute_optimal_transport_loss(traj_representation.unsqueeze(0), human_traj_representation.unsqueeze(0))
                 ot_dist_matrix.append(ot_dists[0][0].item())
-                
+
         with open(os.path.join(save_folder, 'tcc_dists.json'), 'w') as f:
             json.dump(tcc_dist_matrix, f)
         with open(os.path.join(save_folder, 'ot_dists.json'), 'w') as f:

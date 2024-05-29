@@ -69,7 +69,7 @@ def load_model(cfg):
     print("model loaded")  
     return model
 
-def gif_of_clip(cfg, demo_type, ep_num, frame_num, slide, output_dir, cycle=False, save=True):
+def gif_of_clip(cfg, demo_type, ep_num, frame_num, slide, output_dir, cycle=False, save=True, full_clip=False):
     """
     Computes latent representations of a video from embodiment type {demo_type}
     and episode number {ep_num} based on a provided model.
@@ -109,6 +109,8 @@ def gif_of_clip(cfg, demo_type, ep_num, frame_num, slide, output_dir, cycle=Fals
     images_arr = load_images(data_folder, resize_shape=cfg.resize_shape)
 
     sub_imgs = images_arr[frame_num:frame_num + slide + 1]
+    if full_clip:
+        sub_imgs = images_arr
 
     pil_imgs = [Image.fromarray(img) for img in sub_imgs]
     if save:
