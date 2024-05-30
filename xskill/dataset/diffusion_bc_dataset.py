@@ -343,7 +343,6 @@ class KitchenBCDataset(torch.utils.data.Dataset):
                 cur_proto_data = human_proto_data   
 
             if ot_lookup: 
-                breakpoint()
                 ot_dist_path = osp.join(self.nearest_neighbor_data_dirs, os.path.basename(os.path.normpath(vid)))
                 z_tilde = []
                 cfg = DictConfig({'data_path': self.paired_demo_img_path, 'resize_shape': [124,124]})

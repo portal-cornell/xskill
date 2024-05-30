@@ -120,7 +120,7 @@ eval_cfg:
   eval_mask_path: ${base_dev_dir}/xskill/datasets/kitchen_dataset/eval_mask.json
   demo_path: ${base_dev_dir}/xskill/datasets/kitchen_dataset/
   demo_item: 247
-  demo_type: 'none_simultaneous'
+  demo_type: 'human'
 
   max_steps: 275
   obs_horizon: ${obs_horizon}

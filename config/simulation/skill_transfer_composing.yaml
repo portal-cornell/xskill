@@ -49,7 +49,6 @@ upsample_proto: False
 unconditioned_policy: False
 SAT_state_only: False
 human_type: 'human_segments_paired_sample'
-paired_human_type: 'human'
 dataset:
   _target_: xskill.dataset.diffusion_bc_dataset.KitchenBCDataset
   resize_shape: ${bc_resize}
@@ -73,7 +72,7 @@ dataset:
   human_type: ${human_type}
   paired_data: False
   paired_percent: 1
-  paired_proto_dirs: ${pretrain_path}/${paired_human_type}_encode_protos/ckpt_${pretrain_ckpt} 
+  paired_proto_dirs: ${pretrain_path}/${human_type}_encode_protos/ckpt_${pretrain_ckpt} 
   paired_demo_img_path: ${base_dev_dir}/xskill/datasets/kitchen_dataset/
   nearest_neighbor_replacement: False
   tcc_replacement: False
