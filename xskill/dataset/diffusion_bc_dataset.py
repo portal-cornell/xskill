@@ -181,7 +181,7 @@ class KitchenBCDataset(torch.utils.data.Dataset):
         self.replace_percent = replace_percent
         self.nearest_neighbor_data_dirs = nearest_neighbor_data_dirs
         self.save_lookups = save_lookups
-        self.num_chops = 4
+        self.num_chops = num_chops
 
         self.data_dirs = data_dirs
         self.proto_dirs = proto_dirs
