@@ -56,6 +56,7 @@ def pretrain(cfg: DictConfig):
         cfg.Model,
         steps_per_epoch=steps_per_epoch,
         pretrain_pipeline=pretrain_pipeline,
+        paired_dataloader_len=len(dataloader),
     )
 
     print("dataset len: ", len(combine_dataset))

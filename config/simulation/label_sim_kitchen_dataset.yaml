@@ -16,3 +16,9 @@ include_transition: True
 vid_mask: '${base_dev_dir}/xskill/datasets/kitchen_dataset/train_mask.json'
 
 batch_size: 28
+
+label_artificial: False 
+artificial_type: ot # can also be tcc
+artificial_path: ${exp_path}/${human_type}_generated_${artificial_type}/ckpt_${ckpt}
+skip_robot: False
+skip_human: False

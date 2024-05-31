@@ -142,7 +142,13 @@ def label_dataset(cfg: DictConfig):
     pipeline = nn.Sequential(Tr.CenterCrop((112, 112)), normalize)
 
     for demo_type in ["robot", cfg.human_type]:
+        if demo_type == 'robot' and cfg.skip_robot:
+            continue
+        if demo_type == cfg.human_type and cfg.skip_human:
+            continue
         data_path = os.path.join(cfg.data_path, demo_type)
+        if demo_type == cfg.human_type and cfg.label_artificial:
+            data_path = os.path.join(cfg.artificial_path)
         all_folders = os.listdir(data_path)
         all_folders = sorted(all_folders, key=lambda x: int(x))
         if cfg.plot_top_k is not None:
@@ -153,10 +159,16 @@ def label_dataset(cfg: DictConfig):
                 save_folder = os.path.join(
                     cfg.exp_path, f"{cfg.human_type}_encode_protos", f"ckpt_{cfg.ckpt}", folder_path
                 )
+                if cfg.label_artificial:
+                    save_folder = os.path.join(
+                        cfg.exp_path, f"{cfg.human_type}_generated_{cfg.artificial_type}_encode_protos", f"ckpt_{cfg.ckpt}", folder_path
+                    )
             else:
                 save_folder = os.path.join(
                     cfg.exp_path, "encode_protos", f"ckpt_{cfg.ckpt}", folder_path
                 )
+            
+            
             os.makedirs(save_folder, exist_ok=True)
 
             data_folder = os.path.join(data_path, folder_path)

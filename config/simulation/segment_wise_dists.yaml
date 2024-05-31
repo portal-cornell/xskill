@@ -17,3 +17,6 @@ frame_sampler:
   downsample_ratio: 1
 
 num_chops: 4
+ot_lookup: False
+tcc_lookup: False
+nearest_neighbor_data_dirs: ${exp_path}/${human_type}_l2/ckpt_${ckpt} 

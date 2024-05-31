@@ -104,6 +104,7 @@ Model:
   tcc_coef: 1
   ot_coef: 1
   unsupervised_training: ${unsupervised_training}
+  warmup_steps: 0
 
   skill_prior: 
     _target_: xskill.model.encoder.VisualMotionPrior

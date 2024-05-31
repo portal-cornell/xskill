@@ -40,6 +40,8 @@ class Model(pl.LightningModule):
         tcc_coef=1,
         ot_coef=1,
         unsupervised_training=True,
+        warmup_steps=0,
+        paired_dataloader_len=0,
     ):
         super(Model, self).__init__()
 
@@ -84,6 +86,8 @@ class Model(pl.LightningModule):
         self.ot_loss_log = 0
         self.ot_coef = ot_coef
         self.unsupervised_training = unsupervised_training
+        self.num_steps_completed = 0
+        self.warmup_steps = warmup_steps*(paired_dataloader_len)
 
     # @profile
     def forward(self, im_q, bbox_q, im_k=None, bbox_k=None, no_proj=False):
@@ -199,10 +203,14 @@ class Model(pl.LightningModule):
         start_time = time.time()
         robot_batch, human_batch, paired_batch = batch
         paired_robot_batch, paired_human_batch = paired_batch
-        self.paired_training_step(paired_robot_batch, paired_human_batch, batch_idx)
+        if self.num_steps_completed >= self.warmup_steps:
+            self.paired_training_step(paired_robot_batch, paired_human_batch, batch_idx)
+        else:
+            print(self.num_steps_completed)
         if self.unsupervised_training:
             self.training_step_helper(robot_batch, batch_idx)
             self.training_step_helper(human_batch, batch_idx)
+        self.num_steps_completed += 1
         print("Total time during one batch = ", time.time() - start_time)
 
     # @profile
@@ -463,6 +471,7 @@ class Model(pl.LightningModule):
 
         Q *= B  # the colomns must sum to 1 so that Q is an assignment
         return Q.t()
+    
     
     # @profile
     # @torch.no_grad()

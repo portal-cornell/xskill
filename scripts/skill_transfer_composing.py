@@ -21,11 +21,14 @@ from tqdm import tqdm
     config_name="skill_transfer_composing",
 )
 def train_diffusion_bc(cfg: DictConfig):
+    from datetime import datetime
+    now = datetime.now()
+    formatted_date = now.strftime("%Y_%m_%d_%H_%M_%S")
     # create save dir
     use_wandb = cfg.use_wandb
     # unique_id = str(uuid.uuid4())
     unique_id = cfg.policy_name if cfg.policy_name != 'FILL' else str(uuid.uuid4())
-    save_dir = os.path.join(cfg.save_dir, unique_id)
+    save_dir = os.path.join(cfg.save_dir, unique_id + f'_{formatted_date}')
     cfg.save_dir = save_dir
     os.makedirs(save_dir, exist_ok=True)
     OmegaConf.save(cfg, os.path.join(save_dir, "hydra_config.yaml"))

@@ -109,13 +109,15 @@ def main(cfg: DictConfig):
                     tcc_dist_dict[str(j)].append(compute_tcc_loss(sub_clip_rep.unsqueeze(0), human_traj_representation.unsqueeze(0)).item())
                     ot_dists = compute_optimal_transport_loss(sub_clip_rep.unsqueeze(0), human_traj_representation.unsqueeze(0))
                     ot_dist_dict[str(j)].append(ot_dists[0][0].item())
-       
+        
         for j in range(len(subarrays)):
             os.makedirs(os.path.join(save_folder, str(j)), exist_ok=True)
             with open(os.path.join(save_folder, str(j), 'tcc_dists.json'), 'w') as f:
                 json.dump(tcc_dist_dict[str(j)], f)
             with open(os.path.join(save_folder, str(j), 'ot_dists.json'), 'w') as f:
                 json.dump(ot_dist_dict[str(j)], f)
+
+        
     
 
 
