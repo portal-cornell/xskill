@@ -38,7 +38,7 @@ bc_resize: [112,112]
 pretrain_resize: [124,124]
 pretrain_pipeline: ["center_crop_112_112","normalize"]
 
-pretrain_path: '${base_dev_dir}/xskill/experiment/pretrain/none_simultaneous_new'
+pretrain_path: '${base_dev_dir}/xskill/experiment/pretrain/...'
 pretrain_ckpt: 79
 # dataset
 raw_representation: True
@@ -47,8 +47,8 @@ softmax_prototype: False
 one_hot_prototype: False
 upsample_proto: False
 unconditioned_policy: False
-SAT_state_only: True
-human_type: 'none_simultaneous'
+SAT_state_only: False
+human_type: '...'
 dataset:
   _target_: xskill.dataset.diffusion_bc_dataset.KitchenBCDataset
   resize_shape: ${bc_resize}
@@ -71,12 +71,12 @@ dataset:
   verbose: True
   human_type: ${human_type}
   paired_data: False
-  paired_percent: 1
+  paired_percent: 0
   paired_proto_dirs: ${pretrain_path}/${human_type}_encode_protos/ckpt_${pretrain_ckpt} 
   paired_demo_img_path: ${base_dev_dir}/xskill/datasets/kitchen_dataset/
   nearest_neighbor_replacement: False
   nearest_neighbor_data_dirs: ${pretrain_path}/${human_type}_l2/ckpt_${pretrain_ckpt} 
-  replace_percent: 1
+  replace_percent: 0
   save_lookups: False
   
 

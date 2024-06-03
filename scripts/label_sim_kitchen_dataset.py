@@ -142,10 +142,10 @@ def label_dataset(cfg: DictConfig):
     pipeline = nn.Sequential(Tr.CenterCrop((112, 112)), normalize)
 
     # for demo_type in ["XSKILL_NO_PAIRING_OT", "XSKILL_NO_PAIRING_TCC", "human", "robot"]:
-    # for demo_type in ["XSKILL_NO_PAIRING_OT"]:
-    # for demo_type in ["XSKILL_NO_PAIRING_TCC"]:
-    # for demo_type in ["human"]:
-    for demo_type in ["robot"]:
+    # for demo_type in ["SINGLE_NO_PAIRING_OT"]:
+    # for demo_type in ["SINGLE_NO_PAIRING_TCC"]:
+    for demo_type in ["singlehand"]:
+    # for demo_type in ["robot"]:
     
         data_path = os.path.join(cfg.data_path, demo_type)
         all_folders = os.listdir(data_path)
