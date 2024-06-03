@@ -34,7 +34,14 @@ class Model(pl.LightningModule):
         positive_window=1,
         negative_window=10,
         pretrain_pipeline=None,
-        paired_dataset=None
+        paired_dataloader=None,
+        use_tcc_loss=False,
+        use_opt_loss=True,
+        tcc_coef=1,
+        ot_coef=1,
+        unsupervised_training=True,
+        warmup_steps=0,
+        paired_dataloader_len=0
     ):
         super(Model, self).__init__()
 
@@ -70,7 +77,7 @@ class Model(pl.LightningModule):
 
 
         self.pretrain_pipeline = pretrain_pipeline
-        self.paired_dataset = paired_dataset
+        # self.paired_dataset = paired_dataset
         self.paired_data_cur_idx = 0
         self.paired_optimizer = torch.optim.Adam(self.encoder_q.parameters(), lr=self.lr)
 

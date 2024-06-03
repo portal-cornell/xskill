@@ -141,7 +141,12 @@ def label_dataset(cfg: DictConfig):
     )
     pipeline = nn.Sequential(Tr.CenterCrop((112, 112)), normalize)
 
-    for demo_type in [cfg.human_type, "robot"]:
+    # for demo_type in ["XSKILL_NO_PAIRING_OT", "XSKILL_NO_PAIRING_TCC", "human", "robot"]:
+    # for demo_type in ["XSKILL_NO_PAIRING_OT"]:
+    # for demo_type in ["XSKILL_NO_PAIRING_TCC"]:
+    # for demo_type in ["human"]:
+    for demo_type in ["robot"]:
+    
         data_path = os.path.join(cfg.data_path, demo_type)
         all_folders = os.listdir(data_path)
         all_folders = sorted(all_folders, key=lambda x: int(x))
@@ -149,9 +154,9 @@ def label_dataset(cfg: DictConfig):
             all_folders = all_folders[: cfg.plot_top_k]
         for folder_path in tqdm(all_folders, disable=not cfg.verbose):
             # store the proto in proto pretrain folder
-            if demo_type == cfg.human_type:
+            if demo_type != 'robot':
                 save_folder = os.path.join(
-                    cfg.exp_path, f"{cfg.human_type}_encode_protos", f"ckpt_{cfg.ckpt}", folder_path
+                    cfg.exp_path, f"{demo_type}_encode_protos", f"ckpt_{cfg.ckpt}", folder_path
                 )
             else:
                 save_folder = os.path.join(
@@ -163,10 +168,10 @@ def label_dataset(cfg: DictConfig):
 
             images_arr = load_images(data_folder, resize_shape=cfg.resize_shape)
             # bbox_arr = load_bbox(data_folder)
-            state_arr = load_state_and_to_tensor(data_folder)
-            moved_obj = detect_moving_objects_array(state_arr, OBS_ELEMENT_INDICES)
-            moved_obj = np.array(moved_obj, dtype=np.int32)
-            moved_obj = moved_obj.tolist()
+            # state_arr = load_state_and_to_tensor(data_folder)
+            # moved_obj = detect_moving_objects_array(state_arr, OBS_ELEMENT_INDICES)
+            # moved_obj = np.array(moved_obj, dtype=np.int32)
+            # moved_obj = moved_obj.tolist()
 
             images_tensor = convert_images_to_tensors(images_arr, pipeline).cuda()
             # images_tensor = images_tensor.unsqueeze(0).cuda()
@@ -186,9 +191,9 @@ def label_dataset(cfg: DictConfig):
             #     for j in range(eps_len - model.slide)
             # ])  #(b,slide,n,4)
 
-            z = model.encoder_q(im_q, None)
-            softmax_z = torch.softmax(z / model.T, dim=1)
-            affordance_emb = model.skill_prior(im_q[:, : model.stack_frames], None)
+            # z = model.encoder_q(im_q, None)
+            # softmax_z = torch.softmax(z / model.T, dim=1)
+            # affordance_emb = model.skill_prior(im_q[:, : model.stack_frames], None)
 
             state_representation = model.encoder_q.get_state_representation(im_q, None)
             traj_representation = model.encoder_q.get_traj_representation(
@@ -198,35 +203,35 @@ def label_dataset(cfg: DictConfig):
             traj_representation = traj_representation.detach().cpu().numpy()
             traj_representation = np.array(traj_representation).tolist()
 
-            encode_protos = repeat_last_proto(z, eps_len)
-            encode_protos = encode_protos.detach().cpu().numpy()
-            encode_protos = np.array(encode_protos).tolist()
+            # encode_protos = repeat_last_proto(z, eps_len)
+            # encode_protos = encode_protos.detach().cpu().numpy()
+            # encode_protos = np.array(encode_protos).tolist()
 
-            softmax_encode_protos = repeat_last_proto(softmax_z, eps_len)
-            softmax_encode_protos = softmax_encode_protos.detach().cpu().numpy()
-            softmax_encode_protos = np.array(softmax_encode_protos).tolist()
+            # softmax_encode_protos = repeat_last_proto(softmax_z, eps_len)
+            # softmax_encode_protos = softmax_encode_protos.detach().cpu().numpy()
+            # softmax_encode_protos = np.array(softmax_encode_protos).tolist()
 
-            affordance_state_embs = affordance_emb.detach().cpu().numpy()
-            affordance_state_embs = np.array(affordance_state_embs).tolist()
+            # affordance_state_embs = affordance_emb.detach().cpu().numpy()
+            # affordance_state_embs = np.array(affordance_state_embs).tolist()
 
-            with open(os.path.join(save_folder, "encode_protos.json"), "w") as f:
-                json.dump(encode_protos, f)
+            # with open(os.path.join(save_folder, "encode_protos.json"), "w") as f:
+            #     json.dump(encode_protos, f)
 
-            with open(
-                os.path.join(save_folder, "softmax_encode_protos.json"), "w"
-            ) as f:
-                json.dump(softmax_encode_protos, f)
+            # with open(
+            #     os.path.join(save_folder, "softmax_encode_protos.json"), "w"
+            # ) as f:
+            #     json.dump(softmax_encode_protos, f)
 
-            with open(
-                os.path.join(save_folder, "affordance_state_embs.json"), "w"
-            ) as f:
-                json.dump(affordance_state_embs, f)
+            # with open(
+            #     os.path.join(save_folder, "affordance_state_embs.json"), "w"
+            # ) as f:
+            #     json.dump(affordance_state_embs, f)
 
             with open(os.path.join(save_folder, "traj_representation.json"), "w") as f:
                 json.dump(traj_representation, f)
 
-            with open(os.path.join(save_folder, "moved_obj.json"), "w") as f:
-                json.dump(moved_obj, f)
+            # with open(os.path.join(save_folder, "moved_obj.json"), "w") as f:
+            #     json.dump(moved_obj, f)
 
         # plot_proto_task_relation(demo_type=demo_type, cfg=cfg)
 
