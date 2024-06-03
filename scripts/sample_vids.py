@@ -3,8 +3,8 @@ import shutil
 import random
 
 # Define paths
-original_folder = '/share/portal/pd337/xskill/datasets/kitchen_dataset/human_segments_paired'
-new_folder = '/share/portal/pd337/xskill/datasets/kitchen_dataset/human_segments_paired_sample'
+original_folder = '/share/portal/pd337/xskill/datasets/kitchen_dataset/singlehand_segments_paired_singlehand'
+new_folder = '/share/portal/pd337/xskill/datasets/kitchen_dataset/singlehand_segments_paired_sample'
 
 # Create new folder if it doesn't exist
 if not os.path.exists(new_folder):
