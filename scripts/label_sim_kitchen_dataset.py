@@ -140,8 +140,8 @@ def label_dataset(cfg: DictConfig):
         mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
     )
     pipeline = nn.Sequential(Tr.CenterCrop((112, 112)), normalize)
-    breakpoint()
-    for demo_type in ["robot", cfg.human_type]:
+    
+    for demo_type in ["robot_segments_paired_twohands"]:
         if demo_type == 'robot' and cfg.skip_robot:
             continue
         if demo_type == cfg.human_type and cfg.skip_human:
@@ -151,6 +151,9 @@ def label_dataset(cfg: DictConfig):
             data_path = os.path.join(cfg.artificial_path)
         all_folders = os.listdir(data_path)
         all_folders = sorted(all_folders, key=lambda x: int(x))
+        all_folders = [665]
+        # all_folders = [566, 568, 570, 572, 574, 576, 578, 580, 582]
+        all_folders = [str(x) for x in all_folders]
         if cfg.plot_top_k is not None:
             all_folders = all_folders[: cfg.plot_top_k]
         for folder_path in tqdm(all_folders, disable=not cfg.verbose):
@@ -164,11 +167,12 @@ def label_dataset(cfg: DictConfig):
                         cfg.exp_path, f"{cfg.human_type}_generated_{cfg.artificial_type}_encode_protos", f"ckpt_{cfg.ckpt}", folder_path
                     )
             else:
-                breakpoint()
                 save_folder = os.path.join(
                     cfg.exp_path, "encode_protos", f"ckpt_{cfg.ckpt}", folder_path
                 )
-            
+            save_folder = os.path.join(
+                    cfg.exp_path, f"{demo_type}_encode_protos", f"ckpt_{cfg.ckpt}", folder_path
+                )
             
             os.makedirs(save_folder, exist_ok=True)
 

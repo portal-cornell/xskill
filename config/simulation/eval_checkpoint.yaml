@@ -6,7 +6,7 @@ pretrain_ckpt: 79
 
 policy_name: 'FILL_IN'
 trained_model_path: '${base_dev_dir}/xskill/experiment/diffusion_bc/kitchen/${policy_name}'
-checkpoint_list: [180, 190]
+checkpoint_list: [170]
 
 project_name: 'kitchen_prototype_diffusion_bc'
 

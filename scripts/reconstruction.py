@@ -122,7 +122,7 @@ def main(cfg: DictConfig):
     all_folders = sorted(all_folders, key=lambda x: int(x))
     for folder_path in tqdm(all_folders, disable=not cfg.verbose):
         new_episode_folder = os.path.join(
-            cfg.exp_path, f"{cfg.human_type}_generated_ot", f"ckpt_{cfg.ckpt}", folder_path
+            cfg.exp_path, f"{cfg.human_type}_generated_ot_{cfg.num_chops}", f"ckpt_{cfg.ckpt}", folder_path
         )
         os.makedirs(new_episode_folder, exist_ok=True)
         if cfg.ot_lookup:
@@ -138,7 +138,7 @@ def main(cfg: DictConfig):
                 copy_images(source_folder, new_episode_folder)
 
         new_episode_folder = os.path.join(
-            cfg.exp_path, f"{cfg.human_type}_generated_tcc", f"ckpt_{cfg.ckpt}", folder_path
+            cfg.exp_path, f"{cfg.human_type}_generated_tcc_{cfg.num_chops}", f"ckpt_{cfg.ckpt}", folder_path
         )
         os.makedirs(new_episode_folder, exist_ok=True)
         if cfg.tcc_lookup:

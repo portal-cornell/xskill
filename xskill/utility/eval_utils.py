@@ -181,11 +181,25 @@ def tcc_loss_(emb1, emb2):
     """Compute the TCC loss between a pair of sequences."""
     similarity = -torch.cdist(emb1, emb2, p=2)/0.1
     beta = F.softmax(similarity, dim=-1)
+    beta_ret = beta
     half_cycle = torch.bmm(beta, emb2)
     similarity = -torch.cdist(half_cycle, emb1, p=2)/0.1
     beta = F.softmax(similarity, dim=-1)
+    beta_ret2 = beta
     cycle_back = torch.bmm(beta, emb1)
-    return F.mse_loss(cycle_back, emb1)
+
+    # Compute L2 distance
+    distances = torch.sqrt(torch.sum((cycle_back.squeeze() - emb1.squeeze())**2, dim=1))
+
+    # Argsort the distances
+    sorted_indices = torch.argsort(distances, descending=True)
+
+    human_frames = torch.argmax(beta_ret[0], dim=1)
+    cycled_frames = torch.argmax(beta_ret2[0], dim=1)
+    dists_t = torch.abs(torch.Tensor(np.arange(len(cycled_frames))).to('cuda') - cycled_frames)
+    dists = dists_t.argsort(descending=True)
+    print(dists_t[dists[0]])
+    return F.mse_loss(cycle_back, emb1), distances, sorted_indices, np.arange(len(cycled_frames))[dists[0]], human_frames[dists[0]].item(), cycled_frames[dists[0]].item()
 
 def compute_tcc_loss(zc_r, zc_h):
     robot_cycle_back_loss = tcc_loss_(zc_r, zc_h)
@@ -228,12 +242,16 @@ def batch_cosine_distance(x, y):
 
 def compute_optimal_transport_loss(zc_r, zc_h, eps = 1e-10):
     dists = [[] for _ in range(zc_r.shape[0])]
+    assignments = []
+    cosin_dists_all = []
     for i in range(zc_r.shape[0]):
         for j in range(zc_h.shape[0]):
             cosin_dists = batch_cosine_distance(zc_r[i].unsqueeze(0), zc_h[j].unsqueeze(0))
             assignment = distributed_sinkhorn(1-cosin_dists[0])
             distance = torch.sum(assignment * cosin_dists[0])
             dists[i].append(distance)
+            assignments.append(assignment)
+            cosin_dists_all.append(cosin_dists[0])
 
-    return dists
+    return dists #, assignments, cosin_dists_all
             

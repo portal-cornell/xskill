@@ -81,7 +81,7 @@ def main(cfg: DictConfig):
     all_folders = sorted(all_folders, key=lambda x: int(x))
     for folder_path in tqdm(all_folders, disable=not cfg.verbose):
         save_folder = os.path.join(
-            cfg.exp_path, f"{cfg.human_type}_l2", f"ckpt_{cfg.ckpt}", folder_path
+            cfg.exp_path, f"{cfg.human_type}_l2_{cfg.num_chops}", f"ckpt_{cfg.ckpt}", folder_path
         )
         os.makedirs(save_folder, exist_ok=True)
         from collections import defaultdict
@@ -106,14 +106,14 @@ def main(cfg: DictConfig):
                 snap_idx = [snap_idx[i].item() for i in range(len(snap_idx))]
                 sub_clip_rep = sub_clip_rep[snap_idx]
                 for human_traj_representation in human_vid_to_traj:
-                    tcc_dist_dict[str(j)].append(compute_tcc_loss(sub_clip_rep.unsqueeze(0), human_traj_representation.unsqueeze(0)).item())
+                    # tcc_dist_dict[str(j)].append(compute_tcc_loss(sub_clip_rep.unsqueeze(0), human_traj_representation.unsqueeze(0)).item())
                     ot_dists = compute_optimal_transport_loss(sub_clip_rep.unsqueeze(0), human_traj_representation.unsqueeze(0))
                     ot_dist_dict[str(j)].append(ot_dists[0][0].item())
         
         for j in range(len(subarrays)):
             os.makedirs(os.path.join(save_folder, str(j)), exist_ok=True)
-            with open(os.path.join(save_folder, str(j), 'tcc_dists.json'), 'w') as f:
-                json.dump(tcc_dist_dict[str(j)], f)
+            # with open(os.path.join(save_folder, str(j), 'tcc_dists.json'), 'w') as f:
+            #     json.dump(tcc_dist_dict[str(j)], f)
             with open(os.path.join(save_folder, str(j), 'ot_dists.json'), 'w') as f:
                 json.dump(ot_dist_dict[str(j)], f)
 

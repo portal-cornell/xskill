@@ -19,4 +19,4 @@ frame_sampler:
 num_chops: 4
 ot_lookup: False
 tcc_lookup: False
-nearest_neighbor_data_dirs: ${exp_path}/${human_type}_l2/ckpt_${ckpt} 
+nearest_neighbor_data_dirs: ${exp_path}/${human_type}_l2_${num_chops}/ckpt_${ckpt} 
