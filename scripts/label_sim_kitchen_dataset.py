@@ -140,6 +140,15 @@ def label_dataset(cfg: DictConfig):
         mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
     )
     pipeline = nn.Sequential(Tr.CenterCrop((112, 112)), normalize)
+<<<<<<< Updated upstream
+=======
+
+    # for demo_type in ["XSKILL_NO_PAIRING_OT", "XSKILL_NO_PAIRING_TCC", "human", "robot"]:
+    # for demo_type in ["SINGLE_NO_PAIRING_OT"]:
+    # for demo_type in ["SINGLE_NO_PAIRING_TCC"]:
+    for demo_type in ["TWO_HANDS_25_PAIRING_OT_1"]:
+    # for demo_type in ["robot"]:
+>>>>>>> Stashed changes
     
     for demo_type in ["robot_segments_paired_twohands"]:
         if demo_type == 'robot' and cfg.skip_robot:

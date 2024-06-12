@@ -120,7 +120,7 @@ def main(cfg: DictConfig):
     -------
     None
     """
-    save_dir = os.path.join(cfg.trained_model_path, 'post_training')
+    save_dir = os.path.join(cfg.trained_model_path, 'post_training_new')
     model_cfg = OmegaConf.load(os.path.join(cfg.trained_model_path, 'hydra_config.yaml'))
 
     nets = create_policy_nets(cfg)
@@ -166,6 +166,8 @@ def main(cfg: DictConfig):
                 tasks_completed = 0
                 all_correct_count = 0
                 num_unspecified_tasks = 0
+                task_completion_rates_list = []
+                misfire_rates_list = []
                 for seed in eval_eps:
                     cfg.eval_cfg.demo_item = seed.item()
                     num_completed, _, initial_obs, final_obs = eval_callback.eval(
@@ -185,18 +187,26 @@ def main(cfg: DictConfig):
                         all_correct_count += 1
 
                     num_unspecified_tasks += get_attempted_unspecified_tasks(task_list, initial_obs, final_obs)
+                    task_completion_rate = num_completed / 4  # Assuming 4 tasks per episode
+                    task_completion_rates_list.append(task_completion_rate)
 
+                    misfire_rate = num_unspecified_tasks / 4  # Assuming 4 tasks per episode
+                    misfire_rates_list.append(misfire_rate)
+                std_dev_task_completion_rate = np.std(task_completion_rates_list).item()
+                std_dev_misfire = np.std(misfire_rates_list).item()
                 # result_dict[demo_type][f'{ckpt_num}'][f'{speed}'] = tasks_completed / (4*len(eval_eps))
                 result_dict[demo_type][f'{ckpt_num}'][f'{speed}']['share-of-tasks'] = tasks_completed / (4*len(eval_eps))
                 result_dict[demo_type][f'{ckpt_num}'][f'{speed}']['all-tasks'] = all_correct_count / len(eval_eps)
                 result_dict[demo_type][f'{ckpt_num}'][f'{speed}']['num-unspecified'] = num_unspecified_tasks / len(eval_eps)
+                result_dict[demo_type][f'{ckpt_num}'][f'{speed}']['std'] = std_dev_task_completion_rate
+                result_dict[demo_type][f'{ckpt_num}'][f'{speed}']['std_miss'] = std_dev_misfire
                 print(result_dict)
     
     with open(os.path.join(save_dir, "policy_results.json"), "w") as outfile:
         # result_dict = json.load(outfile)
         json.dump(result_dict, outfile)
 
-    averages = {"robot": {f'{speed}': {'share-of-tasks': 0, 'all-tasks': 0, 'num-unspecified': 0} for speed in speeds['robot']}, human_type: {f'{speed}': {'share-of-tasks': 0, 'all-tasks': 0, 'num-unspecified': 0} for speed in speeds[human_type]}}
+    averages = {"robot": {f'{speed}': {'share-of-tasks': 0, 'all-tasks': 0, 'num-unspecified': 0, 'std': 0, 'std_miss': 0} for speed in speeds['robot']}, human_type: {f'{speed}': {'share-of-tasks': 0, 'all-tasks': 0, 'num-unspecified': 0, 'std': 0, 'std_miss': 0} for speed in speeds[human_type]}}
     counts = {"robot": {f'{speed}': 0 for speed in speeds['robot']}, human_type: {f'{speed}': 0 for speed in speeds[human_type]}}
 
     for demo_type, values in result_dict.items():
@@ -206,6 +216,8 @@ def main(cfg: DictConfig):
                 averages[demo_type][exec_speed]['share-of-tasks'] += acc['share-of-tasks']
                 averages[demo_type][exec_speed]['all-tasks'] += acc['all-tasks']
                 averages[demo_type][exec_speed]['num-unspecified'] += acc['num-unspecified']
+                averages[demo_type][exec_speed]['std'] += acc['std']
+                averages[demo_type][exec_speed]['std_miss'] += acc['std_miss']
                 counts[demo_type][exec_speed] += 1
 
     for demo_type, values in averages.items():
@@ -214,6 +226,8 @@ def main(cfg: DictConfig):
             averages[demo_type][exec_speed]['share-of-tasks'] /= counts[demo_type][exec_speed]
             averages[demo_type][exec_speed]['all-tasks'] /= counts[demo_type][exec_speed]
             averages[demo_type][exec_speed]['num-unspecified'] /= counts[demo_type][exec_speed]
+            averages[demo_type][exec_speed]['std'] /= counts[demo_type][exec_speed]
+            averages[demo_type][exec_speed]['std_miss'] /= counts[demo_type][exec_speed]
 
     with open(os.path.join(save_dir, "policy_results_avg.json"), "w") as outfile:
         json.dump(averages, outfile)
