@@ -144,7 +144,7 @@ def label_dataset(cfg: DictConfig):
     # for demo_type in ["XSKILL_NO_PAIRING_OT", "XSKILL_NO_PAIRING_TCC", "human", "robot"]:
     # for demo_type in ["SINGLE_NO_PAIRING_OT"]:
     # for demo_type in ["SINGLE_NO_PAIRING_TCC"]:
-    for demo_type in ["singlehand"]:
+    for demo_type in ["TWO_HANDS_25_PAIRING_OT_2"]:
     # for demo_type in ["robot"]:
     
         data_path = os.path.join(cfg.data_path, demo_type)
