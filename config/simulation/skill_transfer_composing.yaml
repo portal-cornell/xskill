@@ -1,4 +1,4 @@
-base_dev_dir: '/share/portal/pd337'
+base_dev_dir: '/share/portal/kk837'
 hydra.job.config.save_dir: null
 save_dir: '${base_dev_dir}/xskill/experiment/diffusion_bc/kitchen/'
 policy_name: 'FILL'
@@ -119,7 +119,7 @@ noise_scheduler:
   prediction_type: 'epsilon'
 
 task_progess_ratio_list: [1]
-demo_type_list: ['robot','human']
+demo_type_list: ['robot','twohands']
 
 eval_callback:
   _target_: xskill.utility.diffusion_bc_callback.visual_diffusion_bc_prediction_callback
@@ -144,7 +144,7 @@ eval_cfg:
   eval_mask_path: ${base_dev_dir}/xskill/datasets/kitchen_dataset/eval_mask.json
   demo_path: ${base_dev_dir}/xskill/datasets/kitchen_dataset/
   demo_item: 247
-  demo_type: 'human'
+  demo_type: 'twohands'
 
   max_steps: 275
   obs_horizon: ${obs_horizon}

@@ -32,7 +32,9 @@ def create_dataset(cfg: DictConfig):
         raise NotImplementedError
 
     env.reset()
-
+    env.viewer.cam.distance = 1.0  # Distance from the center of the scene
+    env.viewer.cam.elevation = -45  # Angle in degrees above the horizon
+    env.viewer.cam.azimuth = 90
     total_episode = kitchen_dataset.replay_buffer.n_episodes
     # assert cfg.end_eps<=total_episode
 
@@ -50,7 +52,7 @@ def create_dataset(cfg: DictConfig):
             image_observations = env.render(width=cfg.res, height=cfg.res)
             image_observations = Image.fromarray(image_observations)
             image_observations.save(os.path.join(save_folder, f"{i}.png"))
-
+        breakpoint()
         actions = eps_data["action"].tolist()
         states = eps_data["obs"].tolist()
         with open(os.path.join(save_folder, "actions.json"), "w") as f:

@@ -271,7 +271,8 @@ def main(cfg: DictConfig):
         plt.title('Cycle Back Accuracy')
         plt.xlabel('Frame Threshold')
         plt.ylabel('Accuracy')
-        plt.grid(True)
+        plt.ylim(0, 1)
+        # plt.grid(True)
         plt.savefig(os.path.join(cfg.clip_path, "tcc_results.png"))
 
 
