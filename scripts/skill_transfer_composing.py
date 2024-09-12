@@ -49,6 +49,7 @@ def train_diffusion_bc(cfg: DictConfig):
     proto_horizon = cfg.proto_horizon
 
     dataset = hydra.utils.instantiate(cfg.dataset)
+    
     # save training data statistics (min, max) for each dim
     stats = dataset.stats
     # open a file for writing in binary mode

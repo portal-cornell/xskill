@@ -16,6 +16,7 @@ from tqdm import tqdm
 import pandas as pd
 import seaborn as sns
 import cv2
+from torchvision.io import read_image
 
 OBS_ELEMENT_INDICES = {
     "bottom burner": np.array([11, 12]),
@@ -84,16 +85,19 @@ def load_images(folder_path, resize_shape=None):
 
     # loop through all PNG files in the sorted list
     for filename in filenames:
-        # open the image file using PIL library
-        img = Image.open(os.path.join(folder_path, filename))
-        # convert the image to a NumPy array
-        img_arr = np.array(img)
-        if resize_shape is not None:
-            img_arr = cv2.resize(img_arr, resize_shape)
-        images.append(img_arr)  # add the image array to the list
+        # # open the image file using PIL library
+        # img = Image.open(os.path.join(folder_path, filename))
+        # # convert the image to a NumPy array
+        # img_arr = np.array(img)
+        # if resize_shape is not None:
+        #     img_arr = cv2.resize(img_arr, resize_shape)
+        # images.append(img_arr)  # add the image array to the list
+
+        cur_im = read_image(os.path.join(folder_path, filename))
+        images.append(cur_im)
 
     # convert the list of image arrays to a NumPy array
-    images_arr = np.array(images)
+    images_arr = torch.stack(images)
     return images_arr
 
 
@@ -122,8 +126,8 @@ def load_model(cfg):
 
 def convert_images_to_tensors(images_arr, pipeline):
     images_tensor = np.transpose(images_arr, (0, 3, 1, 2))  # (T,dim,h,w)
-    images_tensor = torch.tensor(images_tensor, dtype=torch.float32) / 255
-    images_tensor = pipeline(images_tensor)
+    images_tensor = torch.tensor(images_tensor, dtype=torch.float32)
+    # images_tensor = pipeline(images_tensor)
 
     return images_tensor
 
@@ -134,18 +138,21 @@ def convert_images_to_tensors(images_arr, pipeline):
     config_name="label_sim_kitchen_dataset",
 )
 def label_dataset(cfg: DictConfig):
-    model = load_model(cfg)
+    # 384
+    from voltron import instantiate_extractor, load
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    # Load a frozen Voltron (V-Cond) model & configure a vector extractor
+    vcond, preprocess = load("v-cond", device=device, freeze=True)
+    vector_extractor = instantiate_extractor(vcond)().to(device)
+        
 
-    normalize = transforms.Normalize(
-        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-    )
-    pipeline = nn.Sequential(Tr.CenterCrop((112, 112)), normalize)
+    pipeline = nn.Sequential(Tr.CenterCrop((112, 112)))
 
     # for demo_type in ["XSKILL_NO_PAIRING_OT", "XSKILL_NO_PAIRING_TCC", "human", "robot"]:
     # for demo_type in ["SINGLE_NO_PAIRING_OT"]:
     # for demo_type in ["SINGLE_NO_PAIRING_TCC"]:
-    # for demo_type in ["twohands_segments_paired_sample"]:
-    for demo_type in ["CAM_CHANGE_OT"]:
+    for demo_type in ["VOLTRON_OT"]:
+    # for demo_type in ["robot"]:
     
         data_path = os.path.join(cfg.data_path, demo_type)
         all_folders = os.listdir(data_path)
@@ -172,20 +179,10 @@ def label_dataset(cfg: DictConfig):
             # moved_obj = detect_moving_objects_array(state_arr, OBS_ELEMENT_INDICES)
             # moved_obj = np.array(moved_obj, dtype=np.int32)
             # moved_obj = moved_obj.tolist()
-
-            images_tensor = convert_images_to_tensors(images_arr, pipeline).cuda()
             # images_tensor = images_tensor.unsqueeze(0).cuda()
 
             # bbox_tensor = torch.tensor(bbox_arr, dtype=torch.float32).cuda()
             # bbox_tensor = bbox_tensor.unsqueeze(0).cuda()
-
-            eps_len = images_tensor.shape[0]
-            im_q = torch.stack(
-                [
-                    images_tensor[j : j + model.slide + 1]
-                    for j in range(eps_len - model.slide)
-                ]
-            )  # (b,slide+1,c,h,w)
             # bbox_q = torch.stack([
             #     bbox_tensor[j:j + model.slide + 1]
             #     for j in range(eps_len - model.slide)
@@ -194,11 +191,9 @@ def label_dataset(cfg: DictConfig):
             # z = model.encoder_q(im_q, None)
             # softmax_z = torch.softmax(z / model.T, dim=1)
             # affordance_emb = model.skill_prior(im_q[:, : model.stack_frames], None)
-            state_representation = model.encoder_q.get_state_representation(im_q, None)
-            traj_representation = model.encoder_q.get_traj_representation(
-                state_representation
-            )
-            traj_representation = repeat_last_proto(traj_representation, eps_len)
+            imgs = preprocess(images_arr).to("cuda")
+            visual_embeddings = vcond(imgs, mode="visual")
+            traj_representation = vector_extractor(visual_embeddings)
             traj_representation = traj_representation.detach().cpu().numpy()
             traj_representation = np.array(traj_representation).tolist()
 

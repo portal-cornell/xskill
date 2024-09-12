@@ -172,3 +172,49 @@ def traj_representations(cfg, model, pipeline, demo_type, ep_num, frame_list=Non
     traj_rep = model.encoder_q.get_traj_representation(state_rep) # (T, D)
     traj_rep = repeat_last_proto(traj_rep, eps_len)
     return traj_rep, z
+
+
+@torch.no_grad()
+def distributed_sinkhorn(out):
+    Q = torch.exp(out / .05).t(
+    )  # Q is K-by-B for consistency with notations from our paper
+    B = Q.shape[1]  # number of samples to assign
+    K = Q.shape[0]  # how many prototypes
+
+    # make the matrix sums to 1
+    sum_Q = torch.sum(Q)
+    Q /= sum_Q
+
+    for it in range(3):
+        # normalize each row: total weight per prototype must be 1/K
+        sum_of_rows = torch.sum(Q, dim=1, keepdim=True)
+        Q /= sum_of_rows
+        Q /= K
+
+        # normalize each column: total weight per sample must be 1/B
+        Q /= torch.sum(Q, dim=0, keepdim=True)
+        Q /= B
+
+    Q *= B  # the colomns must sum to 1 so that Q is an assignment
+    return Q.t()
+
+def batch_cosine_distance(x, y):
+    C = torch.bmm(x, y.transpose(1, 2))
+    x_norm = torch.norm(x, p=2, dim=2)
+    y_norm = torch.norm(y, p=2, dim=2)
+    x_n = x_norm.unsqueeze(2)
+    y_n = y_norm.unsqueeze(2)
+    norms = torch.bmm(x_n, y_n.transpose(1, 2))
+    C = (1 - C / norms)
+    return C
+
+def compute_optimal_transport_loss(zc_r, zc_h, eps = 1e-10):
+    dists = [[] for _ in range(zc_r.shape[0])]
+    for i in range(zc_r.shape[0]):
+        for j in range(zc_h.shape[0]):
+            cosin_dists = batch_cosine_distance(zc_r[i].unsqueeze(0), zc_h[j].unsqueeze(0))
+            assignment = distributed_sinkhorn(1-cosin_dists[0])
+            distance = torch.sum(assignment * cosin_dists[0])
+            dists[i].append(distance)
+
+    return dists

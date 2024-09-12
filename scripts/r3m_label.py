@@ -122,7 +122,7 @@ def load_model(cfg):
 
 def convert_images_to_tensors(images_arr, pipeline):
     images_tensor = np.transpose(images_arr, (0, 3, 1, 2))  # (T,dim,h,w)
-    images_tensor = torch.tensor(images_tensor, dtype=torch.float32) / 255
+    images_tensor = torch.tensor(images_tensor, dtype=torch.float32)
     images_tensor = pipeline(images_tensor)
 
     return images_tensor
@@ -134,18 +134,25 @@ def convert_images_to_tensors(images_arr, pipeline):
     config_name="label_sim_kitchen_dataset",
 )
 def label_dataset(cfg: DictConfig):
-    model = load_model(cfg)
+    # 512
+    from r3m import load_r3m
+    if torch.cuda.is_available():
+        device = "cuda"
+    else:
+        device = "cpu"
 
-    normalize = transforms.Normalize(
-        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-    )
-    pipeline = nn.Sequential(Tr.CenterCrop((112, 112)), normalize)
+    r3m = load_r3m("resnet34") # resnet18, resnet34
+    r3m.eval()
+    r3m.to(device)
+    
+
+    pipeline = nn.Sequential(Tr.CenterCrop((112, 112)))
 
     # for demo_type in ["XSKILL_NO_PAIRING_OT", "XSKILL_NO_PAIRING_TCC", "human", "robot"]:
     # for demo_type in ["SINGLE_NO_PAIRING_OT"]:
     # for demo_type in ["SINGLE_NO_PAIRING_TCC"]:
-    # for demo_type in ["twohands_segments_paired_sample"]:
-    for demo_type in ["CAM_CHANGE_OT"]:
+    for demo_type in ["r3m_OT"]:
+    # for demo_type in ["robot"]:
     
         data_path = os.path.join(cfg.data_path, demo_type)
         all_folders = os.listdir(data_path)
@@ -178,14 +185,6 @@ def label_dataset(cfg: DictConfig):
 
             # bbox_tensor = torch.tensor(bbox_arr, dtype=torch.float32).cuda()
             # bbox_tensor = bbox_tensor.unsqueeze(0).cuda()
-
-            eps_len = images_tensor.shape[0]
-            im_q = torch.stack(
-                [
-                    images_tensor[j : j + model.slide + 1]
-                    for j in range(eps_len - model.slide)
-                ]
-            )  # (b,slide+1,c,h,w)
             # bbox_q = torch.stack([
             #     bbox_tensor[j:j + model.slide + 1]
             #     for j in range(eps_len - model.slide)
@@ -194,11 +193,8 @@ def label_dataset(cfg: DictConfig):
             # z = model.encoder_q(im_q, None)
             # softmax_z = torch.softmax(z / model.T, dim=1)
             # affordance_emb = model.skill_prior(im_q[:, : model.stack_frames], None)
-            state_representation = model.encoder_q.get_state_representation(im_q, None)
-            traj_representation = model.encoder_q.get_traj_representation(
-                state_representation
-            )
-            traj_representation = repeat_last_proto(traj_representation, eps_len)
+            
+            traj_representation = r3m(images_tensor)
             traj_representation = traj_representation.detach().cpu().numpy()
             traj_representation = np.array(traj_representation).tolist()
 

@@ -131,6 +131,8 @@ eval_callback:
   task_progess_ratio: -1
   pretain_model_path: ${pretrain_path}
   pretrain_model_ckpt: ${pretrain_ckpt}
+  use_r3m: False
+  use_voltron: False
 
 
 eval_cfg:

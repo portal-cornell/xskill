@@ -61,6 +61,8 @@ class visual_diffusion_bc_prediction_callback:
         task_progess_ratio=None,
         pretain_model_path=None,
         pretrain_model_ckpt=None,
+        use_r3m=False,
+        use_voltron=False,
     ) -> None:
         self.raw_representation = raw_representation
         self.softmax_prototype = softmax_prototype
@@ -69,6 +71,8 @@ class visual_diffusion_bc_prediction_callback:
         self.snap_frames = snap_frames
         self.task_progess_ratio = task_progess_ratio
         self.env = self.create_env()
+        self.use_r3m = use_r3m
+        self.use_voltron = use_voltron
 
         if self.task_progess_ratio is not None:
             self.model = self.load_pretrain_model(pretain_model_path,
@@ -77,6 +81,25 @@ class visual_diffusion_bc_prediction_callback:
             self.model = None
 
     def load_pretrain_model(self, pretrain_model_path, pretrain_model_ckpt):
+        if self.use_r3m:
+            from r3m import load_r3m
+            if torch.cuda.is_available():
+                device = "cuda"
+            else:
+                device = "cpu"
+
+            r3m = load_r3m("resnet34") # resnet18, resnet34
+            r3m.eval()
+            r3m.to(device)
+            return r3m
+        if self.use_voltron:
+            from voltron import instantiate_extractor, load
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            # Load a frozen Voltron (V-Cond) model & configure a vector extractor
+            vcond, preprocess = load("v-cond", device=device, freeze=True)
+            vector_extractor = instantiate_extractor(vcond)().to(device)
+            model = [vcond, preprocess, vector_extractor]
+            return model
         device = torch.device("cuda")
         pretrain_cfg = omegaconf.OmegaConf.load(
             os.path.join(pretrain_model_path, ".hydra/config.yaml"))
@@ -191,11 +214,23 @@ class visual_diffusion_bc_prediction_callback:
                 self.task_progess_ratio).astype(np.int32)
             demo_videos = demo_videos[sample_index]
             # print("demo video shape", demo_videos.shape)
+            if self.use_voltron:
+                imgs = self.model[1](demo_videos).to("cuda")
+                visual_embeddings = self.model[0](imgs, mode="visual")
+                traj_representation = self.model[2](visual_embeddings)
+                demo_skill_rep = traj_representation.detach().cpu().numpy()
+                return None, None, None, demo_skill_rep
             images_tensor = convert_images_to_tensors(
                 demo_videos, pretrain_pipeline).cuda()
             # print("images_tensor", images_tensor.shape)
 
             eps_len = images_tensor.shape[0]
+
+            if self.use_r3m:
+                traj_representation = self.model(images_tensor)
+                demo_skill_rep = traj_representation.detach().cpu().numpy()
+                return None, None, None, demo_skill_rep
+
             im_q = torch.stack([
                 images_tensor[j:j + self.model.slide + 1]
                 for j in range(eps_len - self.model.slide)
@@ -233,6 +268,34 @@ class visual_diffusion_bc_prediction_callback:
         #         resize_shape=eval_cfg.resize_shape,
         #     )
         # else:
+        if self.use_voltron:
+            from torchvision.io import read_image
+            folder_path = os.path.join(eval_cfg.demo_path, eval_cfg.demo_type,
+                            f"{eval_cfg.demo_item}")
+            images = []  # initialize an empty list to store the images
+
+            # get a sorted list of filenames in the folder
+            filenames = sorted(
+                [f for f in os.listdir(folder_path) if f.endswith(".png")],
+                key=lambda x: int(os.path.splitext(x)[0]),
+            )
+
+            # loop through all PNG files in the sorted list
+            for filename in filenames:
+                # # open the image file using PIL library
+                # img = Image.open(os.path.join(folder_path, filename))
+                # # convert the image to a NumPy array
+                # img_arr = np.array(img)
+                # if resize_shape is not None:
+                #     img_arr = cv2.resize(img_arr, resize_shape)
+                # images.append(img_arr)  # add the image array to the list
+
+                cur_im = read_image(os.path.join(folder_path, filename))
+                images.append(cur_im)
+
+            # convert the list of image arrays to a NumPy array
+            images_arr = torch.stack(images)
+            return images_arr
         demo_videos = load_images(
             os.path.join(eval_cfg.demo_path, eval_cfg.demo_type,
                             f"{eval_cfg.demo_item}"),

@@ -180,10 +180,15 @@ class KitchenBCDataset(torch.utils.data.Dataset):
         episode_ends = []
         for eps_action_data in train_data["actions"]:
             episode_ends.append(len(eps_action_data))
-
-        for k, v in train_data.items():
-            train_data[k] = np.concatenate(v)
-
+        
+        i = 0
+        for k, v in tqdm(train_data.items()):
+            try:
+                train_data[k] = np.concatenate(v)
+            except MemoryError:
+                print(f"MemoryError: Could not concatenate arrays for key {k}. Consider processing data in smaller chunks.")
+            i += 1
+        
         print(f"training data len {len(train_data['actions'])}")
 
         # Marks one-past the last index for each episode
@@ -447,6 +452,7 @@ class KitchenBCDataset(torch.utils.data.Dataset):
 
             train_data["protos"].append(proto_data)
             train_data["actions"].append(self.load_action_and_to_tensor(v))
+        
 
     def __len__(self):
         # all possible segments of the dataset
