@@ -1,25 +1,21 @@
 # XSkill: Cross Embodiment Skill Discovery
 
-<sup>1,</sup><sup>2</sup>[Mengda Xu](https://mengdaxu.github.io/),  <sup>1,</sup>[Zhenjia Xu](https://www.zhenjiaxu.com/),  <sup>1</sup>[Cheng Chi](https://cheng-chi.github.io/),  <sup>2,</sup><sup>3</sup>[Manuela Veloso](https://www.cs.cmu.edu/~mmv/),  <sup>1</sup>[Shuran Song](https://shurans.github.io/)
+<sup>1*</sup>[Prithwish Dan](https://pdan101.github.io/),  <sup>1*</sup>[Kushal Kedia](https://kushal2000.github.io/),  <sup>1</sup>[Sanjiban Choudhury](https://sanjibanc.github.io/)
 
-<sup>1</sup>Columbia University,  <sup>2</sup>JP Morgan AI Research,<sup>3</sup>CMU  
+<sup>1</sup>Cornell University, <sup>*</sup>Equal Contribution
 
-**CoRL 2023** 
+[Project Page](https://portal-cornell.github.io/rhyme/)|[arxiv](https://arxiv.org/pdf/2409.06615)
 
-[Project Page](https://xskill.cs.columbia.edu/)|[arxiv](https://arxiv.org/pdf/2307.09955.pdf)
-
-This repository contains code for training and evaluating XSkill in both simulation and real-world settings.
-![Teaser Image](XSkill_teaser.png)
 
 ## 🚀 Installation
 
-Follow these steps to install `XSkill`:
+Follow these steps to install `RHyME`:
 
 1. Create and activate the conda environment:
    ```bash
-   cd xskill
+   cd rhyme
    conda env create -f environment.yml
-   conda activate xskill
+   conda activate rhyme
    pip install -e . 
    ```
 
@@ -27,71 +23,103 @@ Follow these steps to install `XSkill`:
 
 To set up the simulation dataset:
 
-1. Create a new directory for datasets under XSkill:
-   ```bash
-   mkdir datasets
-   cd datasets
-   wget https://xskill.cs.columbia.edu/data/kitchen.zip
-   unzip kitchen.zip
-   ```
-2. Set the `base_dev_dir` config/simulation/create_kitchen_datase.yaml to your working directory. Run the following command to generate the cross-embodiment kitchen data and the training mask:
-    ```bash
-    cd scripts
-    python create_all_kitchen_dataset.py
-    python extract_kitchen_info.py
-    ```
+1. Instructions TBD
 
-## 🌐 Real World Dataset
-To Download the real world kitchen dataset:
-   ```bash
-   mkdir datasets
-   cd datasets
-   wget https://xskill.cs.columbia.edu/data/real_kitchen_data.zip
-   ```
 ## 🚴‍♂️ Training
 
 ### Simulation
 
-1. Run the skill discovery script:
+Datasets (Visual Encoder):
+- robot
+- twohands
+- robot_segments_paired_twohands and twohands_segments_paired_twohands (Optional)
+
+Datasets (Diffusion Policy):
+- robot
+- imagined demonstrator dataset (will be created)
+
+
+1. Pretrain visual encoder:
    ```bash
    python scripts/skill_discovery.py
    ```
-2. Label the dataset using the learned prototype by the trained model. 
-    ```bash
-    python scripts/label_sim_kitchen_dataset.py
-    ```
-3. Execute the skill transfer and composing script. Replace the pretrain_path and pretrain_ckpt in cfg/simulation/skill_transfer_composing.yaml
-    ```
-    python scripts/skill_transfer_composing.py
-    ``` 
-### Real World
-
-1. Execute the real-world skill discovery script:
+   Additional options include:
    ```bash
-   python scripts/realworld/skill_discovery.py
+   exp_name (name of model)
+   cross_embodiment (human, singlehand, twohands)
+   use_paired_data (True/False)
+   paired_dataset.percentage_pairing (0-1)
+   ```
+2. Convert images into latent vectors using pretrained visual encoder: 
+   ```bash
+   python scripts/label_sim_kitchen_dataset.py
+   ```
+   Additional options include:
+   ```bash
+   cross_embodiment (human, singlehand, twohands)
+   pretrain_model_name
+   ckpt
+   ```
+3. Compute and store sequence-level distance metrics between cross embodiment play data and robot data:
+   ```
+   python scripts/chopped_segment_wise_dists.py
    ``` 
-2. Label the real-world dataset:
-    ```bash
-    python scripts/realworld/label_real_kitchen_dataset.py
-    ``` 
-3. 📊 Visualization
-
-    Open the provided Jupyter notebook `viz_real.ipynb` to visualize the learned prototypes:
+   Additional options include:
+   ```bash
+   cross_embodiment_segments (e.g. twohands_segments_paired_sample)
+   pretrain_model_name
+   ckpt 
+   num_chops (number of clips to retrieve per robot video)
+   ```
+4. "Imagine" the paired demonstrator dataset, and store it in the datasets folder:
+   ```
+   python scripts/reconstruction.py
+   ```
+   Additional options include:
+   ```bash
+   cross_embodiment_segments (e.g. twohands_segments_paired_sample)
+   pretrain_model_name
+   ckpt 
+   ot_lookup (True/False)
+   tcc_lookup (True/False)
+   num_chops (number of clips to retrieve per robot video)
+   ```
+5. Convert the imagined dataset into latent vectors:
+   ```
+   python scripts/label_sim_kitchen_dataset.py include_robot=False pretrain_model_name=NO_PAIRING_TWOHANDS cross_embodiment=NO_PAIRING_TWOHANDS_twohands_segments_paired_sample_generated_ot_2_ckpt40
+   ```
+   Additional options include:
+   ```bash
+   include_robot (True/False)
+   pretrain_model_name
+   cross_embodiment (now should be the name of the reconstructed dataset from OT)
+   ```
+6. Train conditional diffusion policy to translate imagined demonstrator videos into robot actions:
+   ```
+   python scripts/skill_transfer_composing.py pretrain_model_name=NO_PAIRING_TWOHANDS pretrain_ckpt=40 eval_cfg.demo_type=twohands cross_embodiment=NO_PAIRING_TWOHANDS_twohands_segments_paired_sample_generated_ot_2_ckpt40 dataset.paired_data=True dataset.paired_percent=0.5
+   ```
+   Additional options include:
+   ```bash
+   pretrain_model_name
+   pretrain_ckpt
+   eval_cfg.demo_type (specifies which demonstrator to evaluate on)
+   cross_embodiment (reconstructed dataset from OT)
+   dataset.paired_data (True if using the imagined paired dataset)
+   dataset.paired_percent (hybrid training on robot/imagined dataset)
+   ```
 
 ### BibTeX
    ```bash
-   @inproceedings{
-        xu2023xskill,
-        title={{XS}kill: Cross Embodiment Skill Discovery},
-        author={Mengda Xu and Zhenjia Xu and Cheng Chi and  Manuela Veloso and Shuran Song},
-        booktitle={7th Annual Conference on Robot Learning},
-        year={2023},
-        url={https://openreview.net/forum?id=8L6pHd9aS6w}
-        }
+   @article{
+      kedia2024one,
+      title={One-Shot Imitation under Mismatched Execution},
+      author={Kedia, Kushal and Dan, Prithwish and Choudhury, Sanjiban},
+      journal={arXiv preprint arXiv:2409.06615},
+      year={2024}
+   }
    ``` 
-### License
-This repository is released under the MIT license. 
 
 ### Acknowledgement
+* Much of the training pipeline is adapted from [XSkill](https://xskill.cs.columbia.edu/).
 * Diffusion Policy is adapted from [Diffusion Policy](https://github.com/real-stanford/diffusion_policy)
 * Many useful utilies are adapted from [XIRL](https://x-irl.github.io/).

@@ -1,4 +1,4 @@
-name: xskill
+name: rhyme
 channels:
   - conda-forge
 dependencies:

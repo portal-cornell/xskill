@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import wandb
 from torch import nn
-
+import time
 
 class Model(pl.LightningModule):
 
@@ -34,18 +34,16 @@ class Model(pl.LightningModule):
         positive_window=1,
         negative_window=10,
         pretrain_pipeline=None,
-        paired_dataloader=None,
         use_tcc_loss=False,
         use_opt_loss=True,
         tcc_coef=1,
         ot_coef=1,
         unsupervised_training=True,
         warmup_steps=0,
-        paired_dataloader_len=0
+        paired_dataloader_len=0,
+        use_paired_data=False
     ):
         super(Model, self).__init__()
-
-
         self.dim = dim
         self.T = T
         self.clutser_T = clutser_T
@@ -77,9 +75,17 @@ class Model(pl.LightningModule):
 
 
         self.pretrain_pipeline = pretrain_pipeline
-        # self.paired_dataset = paired_dataset
-        self.paired_data_cur_idx = 0
+        self.use_paired_data = use_paired_data
         self.paired_optimizer = torch.optim.Adam(self.encoder_q.parameters(), lr=self.lr)
+        self.use_tcc_loss = use_tcc_loss
+        self.use_opt_loss = use_opt_loss
+        self.tcc_loss_log = 0
+        self.tcc_coef = tcc_coef
+        self.ot_loss_log = 0
+        self.ot_coef = ot_coef
+        self.unsupervised_training = unsupervised_training
+        self.num_steps_completed = 0
+        self.warmup_steps = warmup_steps*(paired_dataloader_len)
 
     # @profile
     def forward(self, im_q, bbox_q, im_k=None, bbox_k=None, no_proj=False):
@@ -149,29 +155,68 @@ class Model(pl.LightningModule):
             max_T, min_T + (max_T - min_T) /
             (self.trainer.max_epochs / 2) * self.trainer.current_epoch)
 
+    def tcc_loss_(self, emb1, emb2):
+        """Compute the TCC loss between a pair of sequences."""
+        similarity = -torch.cdist(emb1, emb2, p=2)/self.T
+        beta = F.softmax(similarity, dim=-1)
+        half_cycle = torch.bmm(beta, emb2)
+        similarity = -torch.cdist(half_cycle, emb1, p=2)/self.T
+        beta = F.softmax(similarity, dim=-1)
+        cycle_back = torch.bmm(beta, emb1)
+        return F.mse_loss(cycle_back, emb1)
+    
+
+    def compute_tcc_loss(self, zc_r, zc_h):
+        robot_cycle_back_loss = self.tcc_loss_(zc_r, zc_h)
+        human_cycle_back_loss = self.tcc_loss_(zc_h, zc_r)
+        return robot_cycle_back_loss + human_cycle_back_loss
+
+    def batch_cosine_distance(self, x, y):
+        C = torch.bmm(x, y.transpose(1, 2))
+        x_norm = torch.norm(x, p=2, dim=2)
+        y_norm = torch.norm(y, p=2, dim=2)
+        x_n = x_norm.unsqueeze(2)
+        y_n = y_norm.unsqueeze(2)
+        norms = torch.bmm(x_n, y_n.transpose(1, 2))
+        C = (1 - C / norms)
+        return C
+    
+    def compute_optimal_transport_loss(self, zc_r, zc_h, eps = 1e-10):
+        total_loss = 0
+        for i in range(zc_r.shape[0]):
+            neg_logits = torch.zeros(zc_r.shape[0])
+            for j in range(zc_h.shape[0]):
+                cosin_dists = self.batch_cosine_distance(zc_r[i].unsqueeze(0), zc_h[j].unsqueeze(0))
+                assignment = self.distributed_sinkhorn(1-cosin_dists[0])
+                distance = torch.sum(assignment * cosin_dists[0])
+                neg_logits[j] = -distance/self.T
+            ot_dist = 1-F.softmax(neg_logits, dim=0)[i]
+            if torch.isnan(ot_dist):
+                print("Nan value in ot loss")
+                breakpoint()
+            total_loss += ot_dist
+        return total_loss
+    
     def training_step(self, batch, batch_idx):
-        robot_batch, human_batch = batch
-        if self.paired_dataset is not None:
-            self.paired_training_step()
-        self.training_step_helper(robot_batch, batch_idx)
-        self.training_step_helper(human_batch, batch_idx)
-        # TODO: Add training step helper for paired data
+        start_time = time.time()
+        if self.use_paired_data:
+            robot_batch, human_batch, paired_batch = batch
+            paired_robot_batch, paired_human_batch = paired_batch
+        else:
+            robot_batch, human_batch = batch
 
-    def paired_training_step(self):
-        print(f'here: {self.paired_data_cur_idx}')
+        if self.num_steps_completed >= self.warmup_steps and self.use_paired_data:
+            self.paired_training_step(paired_robot_batch, paired_human_batch, batch_idx)
+        else:
+            print(self.num_steps_completed)
+        if self.unsupervised_training:
+            self.training_step_helper(robot_batch, batch_idx)
+            self.training_step_helper(human_batch, batch_idx)
+        self.num_steps_completed += 1
+        print("Total time during one batch = ", time.time() - start_time)
 
-        emb1, emb2 = self.paired_dataset[self.paired_data_cur_idx]
-        emb1 = emb1.unsqueeze(0)
-        emb2 = emb2.unsqueeze(0)
-        for i in range(1, 2):
-            next1, next2 = self.paired_dataset[self.paired_data_cur_idx+i]
-            emb1 = torch.cat((emb1, next1.unsqueeze(0)), dim=0)
-            emb2 = torch.cat((emb2, next1.unsqueeze(0)), dim=0)
-
-        # emb1/emb2 (B, 100, 3, h, w), each batch element is a corresponding pair
-        robot_batch = emb1
-        human_batch = emb2
-
+    # @profile
+    def paired_training_step(self, robot_batch, human_batch, batch_idx):
         batch_size = robot_batch.shape[0]
         robot_batch_clips = []
         human_batch_clips = []
@@ -198,13 +243,25 @@ class Model(pl.LightningModule):
                                   im_k=human_batch_clips.to('cuda'),
                                   bbox_k=None,
                                   no_proj=True)
-        breakpoint()
-        # TODO: Write the loss and optimize, put lower LR?
-                
-
-        self.paired_data_cur_idx += 2
-        self.paired_data_cur_idx %= len(self.paired_dataset)
-        
+        # break a tensor in the first dimension into 2 equally sized tensors
+        zc_r, zc_h = torch.stack(torch.chunk(zc_r, batch_size)), torch.stack(torch.chunk(zc_h, batch_size))
+        self.paired_optimizer.zero_grad()
+        rep_loss = torch.tensor(0.0, requires_grad=True)
+        self.tcc_loss_log = self.compute_tcc_loss(zc_r, zc_h)
+        self.ot_loss_log = self.compute_optimal_transport_loss(zc_r, zc_h)/batch_size
+        if self.use_tcc_loss:
+            rep_loss = rep_loss + (self.tcc_coef * self.tcc_loss_log)
+        if self.use_opt_loss:
+            rep_loss = rep_loss + (self.ot_coef * self.ot_loss_log)
+        rep_loss.backward()
+        self.paired_optimizer.step()
+        with torch.no_grad():
+            wandb.log({
+                    'tcc_loss':
+                    self.tcc_loss_log,
+                    'ot_loss':
+                    self.ot_loss_log
+                })
 
     # @profile
     def training_step_helper(self, batch, batch_idx):
@@ -264,7 +321,6 @@ class Model(pl.LightningModule):
                                   bbox_q=None,
                                   im_k=swav_batch_im_k,
                                   bbox_k=None)
-
         if self.reverse_augment:
             chunk_zc_q, chunk_zc_k = torch.chunk(zc_q,
                                                  2 * batch_size), torch.chunk(
@@ -282,7 +338,7 @@ class Model(pl.LightningModule):
         with torch.no_grad():
             assignent_q = self.distributed_sinkhorn(zc_k)
             assignent_k = self.distributed_sinkhorn(zc_q)
-
+        # breakpoint()
         rep_loss += 0.5 * (-torch.mean(
             torch.sum(assignent_q * F.log_softmax(zc_q / self.T, dim=1), dim=1)
         ) - torch.mean(
@@ -390,7 +446,7 @@ class Model(pl.LightningModule):
                 'prior_lr':
                 s_sch.get_lr()[0] if self.use_lr_scheduler else self.lr,
                 'T':
-                self.T
+                self.T,
             })
 
     # @profile
@@ -417,3 +473,4 @@ class Model(pl.LightningModule):
 
         Q *= B  # the colomns must sum to 1 so that Q is an assignment
         return Q.t()
+    

@@ -122,10 +122,10 @@ def main(cfg: DictConfig):
     all_folders = sorted(all_folders, key=lambda x: int(x))
     for folder_path in tqdm(all_folders, disable=not cfg.verbose):
         new_episode_folder = os.path.join(
-            cfg.exp_path, f"{cfg.human_type}_generated_ot_{cfg.num_chops}", f"ckpt_{cfg.ckpt}", folder_path
+            cfg.data_path, f"{cfg.pretrain_model_name}_{cfg.cross_embodiment_segments}_generated_ot_{cfg.num_chops}_ckpt{cfg.ckpt}", folder_path
         )
-        os.makedirs(new_episode_folder, exist_ok=True)
         if cfg.ot_lookup:
+            os.makedirs(new_episode_folder, exist_ok=True)
             ot_dist_path = osp.join(cfg.nearest_neighbor_data_dirs, f'{folder_path}')
             for j in range(cfg.num_chops):
                 ot_dist_subpath = os.path.join(ot_dist_path, str(j), 'ot_dists.json')
@@ -134,14 +134,14 @@ def main(cfg: DictConfig):
                 ot_dist_data = np.array(ot_dist_data, dtype=np.float32)
                 human_segment_idx = np.argmin(ot_dist_data)
 
-                source_folder = os.path.join(cfg.data_path, cfg.human_type, str(human_segment_idx))
+                source_folder = os.path.join(cfg.data_path, cfg.cross_embodiment_segments, str(human_segment_idx))
                 copy_images(source_folder, new_episode_folder)
 
         new_episode_folder = os.path.join(
-            cfg.exp_path, f"{cfg.human_type}_generated_tcc_{cfg.num_chops}", f"ckpt_{cfg.ckpt}", folder_path
+            cfg.data_path, f"{cfg.pretrain_model_name}_{cfg.cross_embodiment_segments}_generated_tcc_{cfg.num_chops}_ckpt{cfg.ckpt}", folder_path
         )
-        os.makedirs(new_episode_folder, exist_ok=True)
         if cfg.tcc_lookup:
+            os.makedirs(new_episode_folder, exist_ok=True)
             tcc_dist_path = osp.join(cfg.nearest_neighbor_data_dirs, f'{folder_path}')
             for j in range(cfg.num_chops):
                 tcc_dist_subpath = os.path.join(tcc_dist_path, str(j), 'tcc_dists.json')
