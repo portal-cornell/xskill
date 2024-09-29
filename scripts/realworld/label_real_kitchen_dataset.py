@@ -100,7 +100,7 @@ def label_dataset(cfg: DictConfig):
                                    desc="labelling task"):
 
             eps_end = zarr_data['/meta/episode_ends'][:]
-            image_zarr = zarr_data['/data/camera_2']
+            image_zarr = zarr_data[f'/data/{cfg.camera_name}']
             print(f"{key} image shape: {image_zarr.shape}")
             print(f"eps end: {eps_end}")
             z_store = []

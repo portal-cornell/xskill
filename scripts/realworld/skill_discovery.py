@@ -5,13 +5,13 @@ from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning.callbacks import ModelCheckpoint, TQDMProgressBar
 import wandb
-from xskill.dataset.dataset import ConcatDataset
+from xskill.dataset.dataset import ConcatDatasetMax
 from xskill.utility.transform import get_transform_pipeline
 
 
 @hydra.main(version_base=None,
             config_path="../../config/realworld",
-            config_name="skill_discovery")
+            config_name="skill_discovery_portal")
 def pretrain(cfg: DictConfig):
     output_dir = HydraConfig.get().runtime.output_dir
     print(f"output_dir: {output_dir}")
@@ -19,7 +19,7 @@ def pretrain(cfg: DictConfig):
 
     robot_dataset = hydra.utils.instantiate(cfg.robot_dataset)
     human_dataset = hydra.utils.instantiate(cfg.human_dataset)
-    combine_dataset = ConcatDataset(robot_dataset, human_dataset)
+    combine_dataset = ConcatDatasetMax(robot_dataset, human_dataset)
 
     dataloader = torch.utils.data.DataLoader(
         combine_dataset,

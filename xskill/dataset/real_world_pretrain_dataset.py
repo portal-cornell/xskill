@@ -7,8 +7,7 @@ import cv2
 import numpy as np
 import torch
 
-from xskill.dataset.real_data_conversion import \
-    real_data_to_replay_buffer
+from xskill.dataset.real_data_conversion import real_data_to_replay_buffer, portal_real_data_to_replay_buffer
 
 IndexBatch = namedtuple("IndexBatch", "im_q index info")
 
@@ -23,8 +22,9 @@ class RealWorldEpisodeTrajDataset(torch.utils.data.Dataset):
         seed=None,
         camera_name='camera_2',
         max_get_threads=4,
-        read_top_n=1,
+        read_top_n=None,
         resize_shape=[320, 240],
+        portal=False,
     ) -> None:
         super().__init__()
         self._frame_sampler = frame_sampler
@@ -33,17 +33,25 @@ class RealWorldEpisodeTrajDataset(torch.utils.data.Dataset):
         self.slide = slide
         self._allowed_dirs = _allowed_dirs
         print(self._allowed_dirs)
-        self.in_replay_buffer = {
-            dir: real_data_to_replay_buffer(dir,
-                                            image_keys=[camera_name],
-                                            read_top_n=read_top_n)
-            for dir in self._allowed_dirs
-        }
+        if portal:
+            self.in_replay_buffer = {
+                dir: portal_real_data_to_replay_buffer(dir,
+                                                image_keys=[camera_name],
+                                                read_top_n=read_top_n)
+                for dir in self._allowed_dirs
+            }
+        else:
+            self.in_replay_buffer = {
+                dir: real_data_to_replay_buffer(dir,
+                                                image_keys=[camera_name],
+                                                read_top_n=read_top_n)
+                for dir in self._allowed_dirs
+            }
 
         self.seed_rng()
         self._indexfile = {}
         self._build_dir_tree()
-        self.camera_name = camera_name
+        self.camera_name = camera_name if not portal else 'third_person_cam'
         self.max_get_threads = max_get_threads
 
     def seed_rng(self):
@@ -120,6 +128,12 @@ class RealWorldEpisodeTrajDataset(torch.utils.data.Dataset):
             eps_begin = eps_ends[vid_idx - 1]
         info['eps_begin'] = eps_begin
         info['eps_len'] = eps_len
+        if eps_len == 0:
+            print('rip')
+            print(idx)
+            print(class_idx)
+            print(vid_idx)
+            print(eps_ends[vid_idx])
         sample = self._frame_sampler.sample(np.arange(eps_len))
         # get_time = time.time()
         sequence_data = self._get_sequence_data(
