@@ -11,6 +11,7 @@ import zarr
 import concurrent.futures
 from pathlib import Path
 import cv2
+from xskill.dataset.real_data_conversion import portal_real_data_to_replay_buffer
 
 
 def repeat_last_proto(encode_protos, eps_len):
@@ -86,6 +87,21 @@ def label_dataset(cfg: DictConfig):
     human_dataset = hydra.utils.instantiate(cfg.human_dataset)
     resize_shape = cfg.resize_shape
 
+    robot_in_replay_buffer = {
+                dir: portal_real_data_to_replay_buffer(dir,
+                                                image_keys=['third_person_cam'],
+                                                read_top_n=None, rewrite=True)
+                for dir in cfg.robot_dataset._allowed_dirs
+            }
+    
+    human_in_replay_buffer = {
+                dir: portal_real_data_to_replay_buffer(dir,
+                                                image_keys=['third_person_cam'],
+                                                read_top_n=None, rewrite=True)
+                for dir in cfg.human_dataset._allowed_dirs
+            }
+
+
     # create zarr
     # save_path = os.path.join(cfg.exp_path, f'ckpt_{cfg.ckpt}',
     #                          'prototype.zarr')
@@ -95,11 +111,12 @@ def label_dataset(cfg: DictConfig):
     prototype_zarr = zarr.group(prototype_store)
 
     for embodiment in ['human', 'robot']:
-        dataset_to_label = robot_dataset if embodiment == 'robot' else human_dataset
-        for key, zarr_data in tqdm(dataset_to_label.in_replay_buffer.items(),
+        dataset_to_label = robot_in_replay_buffer if embodiment == 'robot' else human_in_replay_buffer
+        for key, zarr_data in tqdm(dataset_to_label.items(),
                                    desc="labelling task"):
 
             eps_end = zarr_data['/meta/episode_ends'][:]
+            
             image_zarr = zarr_data[f'/data/{cfg.camera_name}']
             print(f"{key} image shape: {image_zarr.shape}")
             print(f"eps end: {eps_end}")

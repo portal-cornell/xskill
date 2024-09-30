@@ -20,7 +20,7 @@ def pretrain(cfg: DictConfig):
     robot_dataset = hydra.utils.instantiate(cfg.robot_dataset)
     human_dataset = hydra.utils.instantiate(cfg.human_dataset)
     combine_dataset = ConcatDatasetMax(robot_dataset, human_dataset)
-
+    breakpoint()
     dataloader = torch.utils.data.DataLoader(
         combine_dataset,
         batch_size=cfg.batch_size,

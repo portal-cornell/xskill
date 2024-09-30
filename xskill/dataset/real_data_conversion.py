@@ -239,7 +239,8 @@ def portal_real_data_to_replay_buffer(
         n_encoding_threads: int = multiprocessing.cpu_count(),
         max_inflight_tasks: int = multiprocessing.cpu_count() * 5,
         read_top_n = None,
-        verify_read: bool = True) -> ReplayBuffer:
+        verify_read: bool = True,
+        rewrite=False) -> ReplayBuffer:
     """
     It is recommended to use before calling this function
     to avoid CPU oversubscription
@@ -299,7 +300,7 @@ def portal_real_data_to_replay_buffer(
 
     zarr_path = input.joinpath('replay_buffer.zarr')
     
-    if zarr_path.exists():
+    if zarr_path.exists() and not rewrite:
         # If the Zarr file exists, open it in read-only mode
         print("Zarr file already exists. Opening in read-only mode.")
         zarr_root = zarr.open(zarr_path, mode='r')
