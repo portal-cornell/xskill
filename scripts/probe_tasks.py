@@ -27,7 +27,7 @@ for combination in combinations:
             and "slide cabinet" in d
             and "microwave" in d
         ):
-            print(i)
+            # print(i)
         # if (
         #     t1 in d
         #     and t2 in d
@@ -37,11 +37,11 @@ for combination in combinations:
             if len(d) == 4:
                 two_tasks = d[0]+' '+d[1]
                 # if two_tasks == "kettle light switch":
-                #     print(i)
+                #     print("yess === ", i)
                 taskset2.add(two_tasks)
                 two_tasks = d[2]+' '+d[3]
-                # if two_tasks == "kettle light switch":
-                #     print(i)
+                if two_tasks == "light switch slide cabinet":
+                    print(i)
                 taskset2.add(two_tasks)
             else:
                 two_tasks = d[0]+' '+d[1]
@@ -61,9 +61,9 @@ for combination in combinations:
                 # if two_tasks == "kettle light switch":
                 #     print(i)
                 taskset1.add(two_tasks)
-        try:
-            if d[2] == "hinge cabinet" or d[3]=="hinge cabinet": print(i)
-        except: pass
+        # try:
+        #     if d[2] == "hinge cabinet" or d[3]=="hinge cabinet": print(i)
+        # except: pass
     # find tasks in taskset1 but not in taskset2
     # print("Unique tasks in taskset1")
     # for task in taskset1:

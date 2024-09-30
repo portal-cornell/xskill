@@ -421,7 +421,7 @@ def plot_tsne(cfg):
 @hydra.main(
     version_base=None,
     config_path="../config/simulation",
-    config_name="label_sim_kitchen_dataset_medium",
+    config_name="label_sim_kitchen_dataset_easy",
 )
 def main(cfg: DictConfig):
     """
