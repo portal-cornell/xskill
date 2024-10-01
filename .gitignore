@@ -175,3 +175,6 @@ renders/
 scripts/gif_outputs/
 rem.sh
 job*
+
+output_*
+*.png

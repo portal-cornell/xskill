@@ -1,4 +1,4 @@
-from typing import Sequence, Tuple, Dict, Optional, Union
+from typing import Sequence, Tuple, Dict, Optional, Union, List
 import os
 import pathlib
 import numpy as np
@@ -45,7 +45,7 @@ def check_and_process_npz(directory, npz_files):
 
     return episode_starts, episode_lengths
 
-def get_all_files(root, file_extension, contain=None) -> list[str]:
+def get_all_files(root, file_extension, contain=None) -> List[str]:
     files = []
     for folder, _, fs in os.walk(root):
         for f in fs:
