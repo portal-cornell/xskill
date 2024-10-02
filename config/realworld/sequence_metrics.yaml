@@ -1,0 +1,13 @@
+base_dev_dir: /share/portal/kk837
+
+hydra:
+  run:
+    dir: '${base_dev_dir}/xskill/experiment/sequence_metrics/${now:%Y-%m-%d_%H-%M-%S}'
+
+proto_path: '/share/portal/pd337/xskill/experiment/pretrain/real_easy/ckpt_149/prototype.zarr'
+
+video_path: '/share/portal/kk837/xskill/datasets/portal_kitchen/'
+prototypes_path: '/share/portal/kk837/xskill/datasets/portal_kitchen/'
+data_dir: '/share/portal/kk837/xskill/datasets/portal_kitchen/'
+
+

@@ -7,5 +7,6 @@ hydra:
 proto_path: '/share/portal/pd337/xskill/experiment/pretrain/real_easy/ckpt_149/prototype.zarr'
 
 video_path: '/share/portal/kk837/xskill/datasets/portal_kitchen/'
+save_path: '/share/portal/kk837/xskill/datasets/portal_kitchen/'
 
 
