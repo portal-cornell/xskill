@@ -4,7 +4,7 @@ hydra:
   run:
     dir: '${base_dev_dir}/xskill/experiment/label_real_kitchen/${now:%Y-%m-%d_%H-%M-%S}'
 
-exp_path: '${base_dev_dir}/xskill/experiment/pretrain/real_medium'
+exp_path: '${base_dev_dir}/xskill/experiment/pretrain/real_easy'
 save_path: ${exp_path}
 ckpt: 149
 device: 'cuda:0'
@@ -13,14 +13,16 @@ camera_name: third_person_cam
 
 
 
-resize_shape: [160,120]
+# resize_shape: [160,120]
+resize_shape: [146,110]
 frequency: 1
 
 robot_dataset:
   _target_: xskill.dataset.real_world_pretrain_dataset.RealWorldEpisodeTrajDataset
   _allowed_dirs: [
-    '${base_dev_dir}/xskill/datasets/portal_kitchen/robot/ABD',
-    '${base_dev_dir}/xskill/datasets/portal_kitchen/robot/BCD',
+    # '${base_dev_dir}/xskill/datasets/portal_kitchen/robot/ABC',
+    # '${base_dev_dir}/xskill/datasets/portal_kitchen/robot/ABD',
+    # '${base_dev_dir}/xskill/datasets/portal_kitchen/robot/BCD',
     # '${base_dev_dir}/xskill/datasets/realworld_kitchen_dataset/data_v2/draw_cloth_oven',
     # '${base_dev_dir}/xskill/datasets/realworld_kitchen_dataset/data_v2/draw_cloth_light',
     # '${base_dev_dir}/xskill/datasets/realworld_kitchen_dataset/data_v2/draw_light_cloth',
@@ -33,7 +35,7 @@ robot_dataset:
   frame_sampler:
     _target_: xskill.dataset.frame_samplers.ZarrFrequencySampler
     offset: 0
-    num_frames: 75
+    num_frames: 100
     frequency: 1
   slide: 8
   max_get_threads: 6
@@ -43,10 +45,11 @@ robot_dataset:
 human_dataset:
   _target_: xskill.dataset.real_world_pretrain_dataset.RealWorldEpisodeTrajDataset
   _allowed_dirs: [
+    '${base_dev_dir}/xskill/datasets/portal_kitchen/human/ABC_test',
     # '${base_dev_dir}/xskill/datasets/portal_kitchen/human/ABD',
     # '${base_dev_dir}/xskill/datasets/portal_kitchen/human/BCD',
-    '${base_dev_dir}/xskill/datasets/portal_kitchen/human/ABD_lift',
-    '${base_dev_dir}/xskill/datasets/portal_kitchen/human/BCD_lift',
+    # '${base_dev_dir}/xskill/datasets/portal_kitchen/human/ABD_lift',
+    # '${base_dev_dir}/xskill/datasets/portal_kitchen/human/BCD_lift',
     # '${base_dev_dir}/xskill/datasets/realworld_kitchen_dataset/data_v2/human_draw_cloth_oven',
     # '${base_dev_dir}/xskill/datasets/realworld_kitchen_dataset/data_v2/human_cloth_light_oven',
     # '${base_dev_dir}/xskill/datasets/realworld_kitchen_dataset/data_v2/human_cloth_oven_light',
@@ -66,5 +69,5 @@ human_dataset:
   resize_shape: ${resize_shape}
   portal: True
 
-augmentations: ['center_crop_110_146','normalize']
+augmentations: ['normalize']
 

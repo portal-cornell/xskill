@@ -301,7 +301,7 @@ class PairedRepDataset(torch.utils.data.Dataset):
 
         sample_paired = self._frame_sampler.sample(vid_paired_paths)
         sequence_data_paired = self._get_sequence_data(sample_paired,self.resize_shape)  # (T,h,w,dim)
-
+        
         im_q = self.transform(sequence_data)
         im_q_paired = self.transform(sequence_data_paired)
         return torch.Tensor(im_q), torch.Tensor(im_q_paired)

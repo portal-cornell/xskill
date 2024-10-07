@@ -83,6 +83,7 @@ class RealWorldEpisodeTrajDataset(torch.utils.data.Dataset):
                       resize_shape):
             try:
                 if resize_shape is not None:
+                    breakpoint()
                     frame = image_zarr[sample_index]
                     resized_frames = cv2.resize(frame, resize_shape)
                     frames[image_index] = resized_frames

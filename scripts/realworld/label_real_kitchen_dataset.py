@@ -83,8 +83,8 @@ def label_dataset(cfg: DictConfig):
     model = load_model(cfg)
     pretrain_pipeline = get_transform_pipeline(cfg.augmentations)
 
-    robot_dataset = hydra.utils.instantiate(cfg.robot_dataset)
-    human_dataset = hydra.utils.instantiate(cfg.human_dataset)
+    # robot_dataset = hydra.utils.instantiate(cfg.robot_dataset)
+    # human_dataset = hydra.utils.instantiate(cfg.human_dataset)
     resize_shape = cfg.resize_shape
 
     robot_in_replay_buffer = {
@@ -106,15 +106,15 @@ def label_dataset(cfg: DictConfig):
     # save_path = os.path.join(cfg.exp_path, f'ckpt_{cfg.ckpt}',
     #                          'prototype.zarr')
     save_path = os.path.join(cfg.save_path, f'ckpt_{cfg.ckpt}',
-                             'prototype.zarr')
+                             'prototype_test.zarr')
     prototype_store = zarr.DirectoryStore(save_path)
     prototype_zarr = zarr.group(prototype_store)
 
-    for embodiment in ['human', 'robot']:
+    for embodiment in ['human']:
         dataset_to_label = robot_in_replay_buffer if embodiment == 'robot' else human_in_replay_buffer
+        # dataset_to_label = human_in_replay_buffer 
         for key, zarr_data in tqdm(dataset_to_label.items(),
                                    desc="labelling task"):
-
             eps_end = zarr_data['/meta/episode_ends'][:]
             
             image_zarr = zarr_data[f'/data/{cfg.camera_name}']

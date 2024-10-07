@@ -17,12 +17,12 @@ robot_dataset:
   _target_: xskill.dataset.real_world_pretrain_dataset.RealWorldEpisodeTrajDataset
   _allowed_dirs: [
     '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/draw_cloth_light',
-    '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/draw_light_cloth',
-    '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/draw_light_oven',
-    '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/light_cloth_oven',
-    '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/light_draw_cloth',
-    '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/light_oven_draw',
-    '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/oven_light_cloth',
+    # '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/draw_light_cloth',
+    # '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/draw_light_oven',
+    # '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/light_cloth_oven',
+    # '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/light_draw_cloth',
+    # '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/light_oven_draw',
+    # '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/oven_light_cloth',
   ]
   frame_sampler:
     _target_: xskill.dataset.frame_samplers.ZarrFrequencyUniformSampler
@@ -38,12 +38,12 @@ human_dataset:
   _target_: xskill.dataset.real_world_pretrain_dataset.RealWorldEpisodeTrajDataset
   _allowed_dirs: [
     '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/human_cloth_light_oven',
-    '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/human_cloth_oven_light',
-    '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/human_draw_cloth_light',
-    '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/human_draw_light_oven',
-    '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/human_draw_light_cloth',
-    '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/human_light_cloth_oven',
-    '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/human_oven_draw_cloth',
+    # '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/human_cloth_oven_light',
+    # '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/human_draw_cloth_light',
+    # '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/human_draw_light_oven',
+    # '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/human_draw_light_cloth',
+    # '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/human_light_cloth_oven',
+    # '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/human_oven_draw_cloth',
 
   ]
   frame_sampler:

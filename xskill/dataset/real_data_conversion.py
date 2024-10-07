@@ -15,7 +15,7 @@ from xskill.codecs.imagecodecs_numcodecs import (register_codecs, Jpeg2k)
 
 register_codecs()
 
-def check_and_process_npz(directory, npz_files):
+def check_and_process_npz(directory, npz_files, is_human=False):
     # Path to the stats.npz file
     stats_path = os.path.join(directory, "stats.npz")
 
@@ -34,7 +34,7 @@ def check_and_process_npz(directory, npz_files):
         
         # Iterate over the npz files and compute starts and lengths
         for episode_idx, f in enumerate(npz_files):
-            raw_episode = np.load(f, allow_pickle=True)["episode"]
+            raw_episode = np.load(f, allow_pickle=True)["episode" if not is_human else "human_video"]
             episode_starts.append(start)
             episode_length = len(raw_episode)
             episode_lengths.append(episode_length)
@@ -255,6 +255,7 @@ def portal_real_data_to_replay_buffer(
             camera_0: (1280, 720)
     image_keys: ['camera_0', 'camera_1']
     """
+    # TODO: camera name needs to change when doing it from the reconstructed human video
     if out_store is None:
         out_store = zarr.MemoryStore()
     if n_decoding_threads <= 0:
@@ -287,7 +288,7 @@ def portal_real_data_to_replay_buffer(
     # compute episode starts and lengths
     npz_files = list(sorted(get_all_files(in_demo_dir, "npz")))
 
-    episode_starts, episode_lengths = check_and_process_npz(in_demo_dir, npz_files)
+    episode_starts, episode_lengths = check_and_process_npz(in_demo_dir, npz_files, is_human=False)
     
     n_steps = episode_starts[-1] + episode_lengths[-1]
     n_cameras = 1
@@ -298,7 +299,9 @@ def portal_real_data_to_replay_buffer(
         
     dt = 0.1 # b/c 10 FPS
 
+    # zarr_path = input.joinpath('replay_buffer.zarr')
     zarr_path = input.joinpath('replay_buffer.zarr')
+
     
     if zarr_path.exists() and not rewrite:
         # If the Zarr file exists, open it in read-only mode
