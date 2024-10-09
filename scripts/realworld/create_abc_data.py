@@ -31,6 +31,8 @@ def get_prototype_dict_human(proto_path, video_path, save_path):
             if task_segment_info_file == 'stats.npz':
                 continue
             demo_num = int(task_segment_info_file[4:-4])
+            # if demo_num != 0:
+            #     continue
             print("Demo num: ", demo_num)
             task_segment_info = np.load(video_path + '/human/' + task + '/demos/' + task_segment_info_file, allow_pickle=True)
             episode_info = task_segment_info['episode']
@@ -43,6 +45,8 @@ def get_prototype_dict_human(proto_path, video_path, save_path):
         # prototype_dict[task] = {}
 
         for i in tqdm(range(len(episode_ends))):
+            # if i != 0:
+            #     continue
             if i == 0:
                 ep_start = 0
                 ep_end = episode_ends[i]
@@ -77,7 +81,6 @@ def get_prototype_dict_human(proto_path, video_path, save_path):
     print(len(task_C_data))
     print(task_C_data[0].shape)
     num_samples = min(len(task_A_data), len(task_B_data), len(task_C_data))
-    breakpoint()
     # Initialize an empty list to store the stacked arrays
 
     # Iterate through each index and stack the arrays along the first axis
@@ -87,25 +90,31 @@ def get_prototype_dict_human(proto_path, video_path, save_path):
         # Append the result to the list
         # stacked_data.append(stacked_array)
 
-        os.mkdir(os.path.join(save_path, "human_stitched", "ABC", "videos", str(i)))
+        # os.makedirs(os.path.join(save_path, "human_stitched", "ABC", "videos", str(i)), exist_ok=True)
+        os.makedirs(os.path.join(save_path, "human_stitched", "ABC", "demos", str(i)), exist_ok=True)
+        output_npz_path = os.path.join(save_path, "human_stitched", "ABC", "demos", str(i), f"demo%05d.npz" % i)
+        data_vals = {}
+        data_vals['episode'] = np.zeros(len(stacked_array))
+        # breakpoint()
+
         output_video_path = os.path.join(save_path, "human_stitched", "ABC", "videos", str(i), f"color.mp4")
         height, width, layers = 720, 960, 3  # Frame dimensions
         fps = 10  # Frame rate for the video
 
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec
-        video_writer = cv2.VideoWriter(output_video_path, fourcc, fps, (width, height))
+        # fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec
+        # video_writer = cv2.VideoWriter(output_video_path, fourcc, fps, (width, height))
 
-        for t, timestep in enumerate(stacked_array):
-            # breakpoint()
-            frame = timestep  # Assuming the frames are in 'obs' and are of shape (720, 960, 3)
-            if frame.shape == (720, 960, 3):
-                # Write the frame to the video
-                video_writer.write(cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))  # OpenCV uses BGR, so we convert
+        # for t, timestep in enumerate(stacked_array):
+        #     # breakpoint()
+        #     frame = timestep  # Assuming the frames are in 'obs' and are of shape (720, 960, 3)
+        #     if frame.shape == (720, 960, 3):
+        #         # Write the frame to the video
+        #         video_writer.write(cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))  # OpenCV uses BGR, so we convert
 
-        # Release the VideoWriter when done with the episode
-        video_writer.release()
+        # # Release the VideoWriter when done with the episode
+        # video_writer.release()
 
-   
+        np.savez(output_npz_path, **data_vals)
 
     # return prototype_dict
 
