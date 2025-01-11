@@ -13,8 +13,8 @@ camera_name: third_person_cam
 
 
 
-# resize_shape: [160,120]
-resize_shape: [146,110]
+resize_shape: [160,120]
+# resize_shape: [146,110]
 frequency: 1
 
 robot_dataset:
@@ -69,5 +69,5 @@ human_dataset:
   resize_shape: ${resize_shape}
   portal: True
 
-augmentations: ['normalize']
+augmentations: ['center_crop_110_146', 'normalize']
 

@@ -106,7 +106,7 @@ def label_dataset(cfg: DictConfig):
     # save_path = os.path.join(cfg.exp_path, f'ckpt_{cfg.ckpt}',
     #                          'prototype.zarr')
     save_path = os.path.join(cfg.save_path, f'ckpt_{cfg.ckpt}',
-                             'prototype_test.zarr')
+                             'prototype_new_ABC.zarr')
     prototype_store = zarr.DirectoryStore(save_path)
     prototype_zarr = zarr.group(prototype_store)
 
