@@ -1,4 +1,4 @@
-base_dev_dir: /share/portal/kk837
+base_dev_dir: /share/portal/pd337
 
 hydra:
   run:
@@ -6,7 +6,7 @@ hydra:
 
 proto_path: '/share/portal/pd337/xskill/experiment/pretrain/real_easy/ckpt_149/prototype.zarr'
 
-video_path: '/share/portal/kk837/xskill/datasets/portal_kitchen/'
-save_path: '/share/portal/kk837/xskill/datasets/portal_kitchen/'
+video_path: '/share/portal/pd337/xskill/datasets/portal_kitchen/'
+save_path: '/share/portal/pd337/xskill/datasets/portal_kitchen/'
 
 
