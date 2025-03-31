@@ -2,11 +2,11 @@ base_dev_dir: '/share/portal/pd337'
 
 resize_shape: [124,124]
 data_path: ${base_dev_dir}/xskill/datasets/kitchen_dataset
-pretrain_model_name: 'NO_PAIRING_TWOHANDS'
-exp_path: '${base_dev_dir}/xskill/experiment/pretrain/${pretrain_model_name}'
+# exp_path: '${base_dev_dir}/xskill/experiment/pretrain/ot_pairing_xskill_2024-05-28_11-48-01'
+exp_path: '${base_dev_dir}/xskill/experiment/pretrain/orig_batch'
 
-ckpt: 40
-cross_embodiment_segments: 'twohands_segments_paired_sample'
+ckpt: 79
+human_type: 'human_segments_paired_sample'
 device: 'cuda:0'
 verbose: True
 
@@ -16,7 +16,7 @@ frame_sampler:
   num_frames: 30
   downsample_ratio: 1
 
-num_chops: 2
+num_chops: 4
 ot_lookup: False
 tcc_lookup: False
-nearest_neighbor_data_dirs: ${exp_path}/${cross_embodiment_segments}_l2_${num_chops}/ckpt_${ckpt} 
+nearest_neighbor_data_dirs: ${exp_path}/${human_type}_l2_${num_chops}/ckpt_${ckpt} 

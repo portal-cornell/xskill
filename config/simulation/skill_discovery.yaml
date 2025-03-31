@@ -1,9 +1,8 @@
 base_dev_dir: '/share/portal/pd337'
 
-exp_name: 'pretrain'
 hydra:
   run:
-    dir: '${base_dev_dir}/xskill/experiment/pretrain/${exp_name}_${now:%Y-%m-%d_%H-%M-%S}'
+    dir: '${base_dev_dir}/xskill/experiment/pretrain/${now:%Y-%m-%d_%H-%M-%S}'
 
 seed: 45
 batch_size: 28
@@ -11,10 +10,6 @@ num_workers: 1
 pin_memory: False
 persistent_workers: True
 drop_last: True
-cross_embodiment: twohands
-use_max_dataset: True
-unsupervised_training: True
-use_paired_data: False
 
 resize_shape: [124,124]
 max_get_threads: 24
@@ -36,7 +31,7 @@ robot_dataset:
 human_dataset:
   _target_: xskill.dataset.dataset.EpisodeTrajDataset
   _allowed_dirs: [
-    '${base_dev_dir}/xskill/datasets/kitchen_dataset/${cross_embodiment}',
+    '${base_dev_dir}/xskill/datasets/kitchen_dataset/human',
   ]
   vid_mask: ${robot_dataset.vid_mask}
   frame_sampler:
@@ -51,19 +46,18 @@ human_dataset:
 paired_dataset:
   _target_: xskill.dataset.dataset.PairedRepDataset
   _allowed_dirs: [
-    '${base_dev_dir}/xskill/datasets/kitchen_dataset/robot_segments_paired_${cross_embodiment}',
-    '${base_dev_dir}/xskill/datasets/kitchen_dataset/${cross_embodiment}_segments_paired_${cross_embodiment}',
+    '${base_dev_dir}/xskill/datasets/kitchen_dataset/robot',
+    '${base_dev_dir}/xskill/datasets/kitchen_dataset/none_simultaneous',
   ]
-  vid_mask: '${base_dev_dir}/xskill/datasets/kitchen_dataset/robot_segments_paired_${cross_embodiment}/train_mask.json'
+  vid_mask: ${robot_dataset.vid_mask}
   frame_sampler:
     _target_: xskill.dataset.frame_samplers.UniformDownSampleSampler
     offset: ${robot_dataset.frame_sampler.offset}
-    num_frames: 30
+    num_frames: ${robot_dataset.frame_sampler.num_frames}
     downsample_ratio: ${robot_dataset.frame_sampler.downsample_ratio}
   slide: ${robot_dataset.slide}
   resize_shape: ${resize_shape}
   max_get_threads: ${max_get_threads}
-  percentage_pairing: 1
 
 
 augmentations: ['random_crop_112_112','color_jitter','grayscale','gaussian_blur','normalize']
@@ -73,7 +67,7 @@ augmentations: ['random_crop_112_112','color_jitter','grayscale','gaussian_blur'
 Trainer:
   accelerator: "gpu"
   devices: [0]
-  max_epochs: 80
+  max_epochs: 81
   enable_progress_bar: True
   log_every_n_steps: 10
 
@@ -100,12 +94,7 @@ Model:
   use_temperature_scheduler: False
   positive_window: 4
   negative_window: 12
-  use_tcc_loss: False
-  use_opt_loss: False
-  tcc_coef: 1
-  ot_coef: 1
-  unsupervised_training: ${unsupervised_training}
-  warmup_steps: 0
+
 
   skill_prior: 
     _target_: xskill.model.encoder.VisualMotionPrior
@@ -114,6 +103,7 @@ Model:
     vision_encoder:
       _target_: xskill.model.encoder.CNN
       out_size: ${Model.skill_prior.out_size}
+
 
     nmb_prototypes: ${Model.dim}
     normalize: False
@@ -150,5 +140,12 @@ Model:
         max_len: 10 
         frequency: 10
 
+
+
+
 callback:
-  every_n_epoch: 1
+  every_n_epoch: 5
+
+
+
+

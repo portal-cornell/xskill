@@ -16,13 +16,13 @@ resize_shape: [160,120]
 robot_dataset:
   _target_: xskill.dataset.real_world_pretrain_dataset.RealWorldEpisodeTrajDataset
   _allowed_dirs: [
-    '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/draw_cloth_light',
-    # '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/draw_light_cloth',
-    # '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/draw_light_oven',
-    # '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/light_cloth_oven',
-    # '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/light_draw_cloth',
-    # '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/light_oven_draw',
-    # '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/oven_light_cloth',
+    '${base_dev_dir}/xskill/datasets/realworld_kitchen_dataset/data_v2/draw_cloth_light',
+    '${base_dev_dir}/xskill/datasets/realworld_kitchen_dataset/data_v2/draw_light_cloth',
+    '${base_dev_dir}/xskill/datasets/realworld_kitchen_dataset/data_v2/draw_light_oven',
+    '${base_dev_dir}/xskill/datasets/realworld_kitchen_dataset/data_v2/light_cloth_oven',
+    '${base_dev_dir}/xskill/datasets/realworld_kitchen_dataset/data_v2/light_draw_cloth',
+    '${base_dev_dir}/xskill/datasets/realworld_kitchen_dataset/data_v2/light_oven_draw',
+    '${base_dev_dir}/xskill/datasets/realworld_kitchen_dataset/data_v2/oven_light_cloth',
   ]
   frame_sampler:
     _target_: xskill.dataset.frame_samplers.ZarrFrequencyUniformSampler
@@ -32,18 +32,17 @@ robot_dataset:
   slide: 8
   max_get_threads: 6
   resize_shape: ${resize_shape}
-  portal: False
 
 human_dataset:
   _target_: xskill.dataset.real_world_pretrain_dataset.RealWorldEpisodeTrajDataset
   _allowed_dirs: [
-    '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/human_cloth_light_oven',
-    # '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/human_cloth_oven_light',
-    # '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/human_draw_cloth_light',
-    # '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/human_draw_light_oven',
-    # '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/human_draw_light_cloth',
-    # '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/human_light_cloth_oven',
-    # '${base_dev_dir}/xskill/datasets/new_xskill/data_v2/human_oven_draw_cloth',
+    '${base_dev_dir}/xskill/datasets/realworld_kitchen_dataset/data_v2/human_cloth_light_oven',
+    '${base_dev_dir}/xskill/datasets/realworld_kitchen_dataset/data_v2/human_cloth_oven_light',
+    '${base_dev_dir}/xskill/datasets/realworld_kitchen_dataset/data_v2/human_draw_cloth_light',
+    '${base_dev_dir}/xskill/datasets/realworld_kitchen_dataset/data_v2/human_draw_light_oven',
+    '${base_dev_dir}/xskill/datasets/realworld_kitchen_dataset/data_v2/human_draw_light_cloth',
+    '${base_dev_dir}/xskill/datasets/realworld_kitchen_dataset/data_v2/human_light_cloth_oven',
+    '${base_dev_dir}/xskill/datasets/realworld_kitchen_dataset/data_v2/human_oven_draw_cloth',
 
   ]
   frame_sampler:
@@ -54,7 +53,6 @@ human_dataset:
   slide: 8
   max_get_threads: ${robot_dataset.max_get_threads}
   resize_shape: ${resize_shape}
-  portal: False
 
 
 augmentations: ['random_crop_110_146','grayscale','gaussian_blur','normalize']
@@ -139,6 +137,7 @@ Model:
 
 callback:
   every_n_epoch: 10
+
 
 
 
